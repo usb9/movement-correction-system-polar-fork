@@ -123,7 +123,7 @@ public class MainActivity extends Activity implements SensorEventListener{
         try {
             dataFile = new File (samples, fileName);
             fileWriter = new FileWriter(dataFile);
-            fileWriter.write("test\n");
+            fileWriter.write("Time,x,y,z\n");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -249,7 +249,7 @@ public class MainActivity extends Activity implements SensorEventListener{
 
             long timeSinceStart = currentTimeMillis - startingTime;
 
-            String saveString = "" + timeSinceStart + " " + x.toString() + " " + y.toString() + " " + z.toString() +"\n";
+            String saveString =timeSinceStart + "," + x.toString() + "," + y.toString() + "," + z.toString() +"\n";
             try {
                 fileWriter.write(saveString);
             } catch (IOException e) {
