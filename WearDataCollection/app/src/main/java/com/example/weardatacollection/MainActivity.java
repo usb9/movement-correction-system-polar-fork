@@ -3,8 +3,8 @@ package com.example.weardatacollection;
 /*
 Nicolas Schmitt, 28/10/22
 Wear OS Test App
-Bluetooth connection is initiated by a mobile phone.
-When a connection is established, each accelerometer reading is sent via bluetooth.
+Stores data from the accelerometer in a file. Each time the app is restarted,
+a new file is created(name is the current date and time).
 Note: permissions checks are currently suppressed except in onCreate() method.
 This is because Android Studio asks for checks on permissions that are only available
 on Android 12 or higher, the watch is running on Android 7.1.1
@@ -46,7 +46,7 @@ import java.util.Date;
 
 public class MainActivity extends Activity implements SensorEventListener{
 
-    private long timestamp1 = System.currentTimeMillis();
+    private long startingTime = System.currentTimeMillis();
 
 
     Button mButtonAdd;
@@ -148,6 +148,7 @@ public class MainActivity extends Activity implements SensorEventListener{
             }
         });
 
+        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
 
     }
@@ -164,7 +165,6 @@ public class MainActivity extends Activity implements SensorEventListener{
     public void onResume() {
         super.onResume();
 
-        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
     }
 
@@ -221,13 +221,13 @@ public class MainActivity extends Activity implements SensorEventListener{
 
     protected void onPause() {
         super.onPause();
-        //stop = false;
-        sensorManager.unregisterListener(this);
+       // sensorManager.unregisterListener(this);           // this prevents recording when the app is running in the background!
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        sensorManager.unregisterListener(this);
         try {
             fileWriter.close();
         } catch (IOException e) {
@@ -245,11 +245,11 @@ public class MainActivity extends Activity implements SensorEventListener{
             Float y = event.values[1];
             Float z = event.values[2];
 
-            long time = System.currentTimeMillis();
+            long currentTimeMillis = System.currentTimeMillis();
 
-            long time1 = time - timestamp1;
+            long timeSinceStart = currentTimeMillis - startingTime;
 
-            String saveString = "" + time1 + " " + x.toString() + " " + y.toString() + " " + z.toString() +"\n";
+            String saveString = "" + timeSinceStart + " " + x.toString() + " " + y.toString() + " " + z.toString() +"\n";
             try {
                 fileWriter.write(saveString);
             } catch (IOException e) {
@@ -262,7 +262,7 @@ public class MainActivity extends Activity implements SensorEventListener{
             tv_zVal.setText(z.toString());
 
 
-            Buffet.setText(Double.toString(time1 / 1000));
+            Buffet.setText(Double.toString(timeSinceStart / 1000));
 
         }
 
