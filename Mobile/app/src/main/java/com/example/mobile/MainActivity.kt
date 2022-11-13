@@ -1,22 +1,32 @@
 package com.example.mobile
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.util.Pair
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.graphics.drawable.DrawableCompat
 import com.androidplot.xy.XYPlot
+import com.polar.sdk.api.PolarBleApi.DeviceStreamingFeature
+import com.polar.sdk.api.model.*
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
 import com.polar.sdk.api.errors.PolarInvalidArgument
+import com.polar.sdk.api.model.PolarAccelerometerData
 import com.polar.sdk.api.model.PolarDeviceInfo
+import com.polar.sdk.api.model.PolarSensorSetting
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.functions.Function
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -34,10 +44,14 @@ class MainActivity : AppCompatActivity() {
         PolarBleApiDefaultImpl.defaultImplementation(applicationContext, PolarBleApi.ALL_FEATURES)
     }
 
+    private var movementDisposable: Disposable? = null
+
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
     private lateinit var connectButton: Button
+    private lateinit var movementButton: Button
+    private lateinit var textViewAccX: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +59,8 @@ class MainActivity : AppCompatActivity() {
 
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
         connectButton = findViewById(R.id.connect_button)
+        movementButton = findViewById(R.id.movement_button)
+        textViewAccX = findViewById(R.id.view_acc_X)
 
         api.setPolarFilter(false)
         api.setApiLogger { s: String -> Log.d(API_LOGGER_TAG, s) }
@@ -119,6 +135,38 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        movementButton.setOnClickListener {
+            val isDisposed = movementDisposable?.isDisposed ?: true
+            if (isDisposed) {
+                toggleButtonDown(movementButton, R.string.stop_movement_stream)
+                movementDisposable = requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
+                    .flatMap { settings: PolarSensorSetting ->
+                        api.startAccStreaming(deviceId, settings)
+                    }
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                        { polarAccelerometerData: PolarAccelerometerData ->
+                            for (data in polarAccelerometerData.samples) {
+                                Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
+                                textViewAccX.text = "X: ${data.x.toString()}"
+                            }
+                        },
+                        { error: Throwable ->
+                            toggleButtonUp(movementButton, R.string.start_movement_stream)
+                            Log.e(TAG, "ACC stream failed. Reason $error")
+                        },
+                        {
+                            showToast("ACC stream complete")
+                            Log.d(TAG, "ACC stream complete")
+                        }
+                    )
+            } else {
+                toggleButtonUp(movementButton, R.string.start_movement_stream)
+                // NOTE dispose will stop streaming if it is "running"
+                movementDisposable?.dispose()
+            }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT), PERMISSION_REQUEST_CODE)
@@ -128,6 +176,35 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
+    }
+
+    private fun requestStreamSettings(identifier: String, feature: PolarBleApi.DeviceStreamingFeature): Flowable<PolarSensorSetting> {
+        val availableSettings = api.requestStreamSettings(identifier, feature)
+        val allSettings = api.requestFullStreamSettings(identifier, feature)
+            .onErrorReturn { error: Throwable ->
+                Log.w(TAG, "Full stream settings are not available for feature $feature. REASON: $error")
+                PolarSensorSetting(emptyMap())
+            }
+        return Single.zip(availableSettings, allSettings) { available: PolarSensorSetting, all: PolarSensorSetting ->
+            if (available.settings.isEmpty()) {
+                throw Throwable("Settings are not available")
+            } else {
+                Log.d(TAG, "Feature " + feature + " available settings " + available.settings)
+                Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
+                return@zip android.util.Pair(available, all)
+            }
+        }
+            .observeOn(AndroidSchedulers.mainThread())
+            .toFlowable()
+            .flatMap(
+                Function { sensorSettings: android.util.Pair<PolarSensorSetting, PolarSensorSetting> ->
+                    DialogUtility.showAllSettingsDialog(
+                        this@MainActivity,
+                        sensorSettings.first.settings,
+                        sensorSettings.second.settings
+                    ).toFlowable()
+                } as io.reactivex.rxjava3.functions.Function<Pair<PolarSensorSetting, PolarSensorSetting>, Flowable<PolarSensorSetting>>
+            )
     }
 
     public override fun onPause() {
