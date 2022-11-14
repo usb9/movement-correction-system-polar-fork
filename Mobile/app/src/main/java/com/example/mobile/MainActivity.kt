@@ -1,20 +1,15 @@
 package com.example.mobile
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.util.Pair
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.view.View
+import android.widget.*
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
-import com.androidplot.xy.XYPlot
-import com.polar.sdk.api.PolarBleApi.DeviceStreamingFeature
-import com.polar.sdk.api.model.*
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
@@ -28,6 +23,7 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.util.*
+
 
 class MainActivity : AppCompatActivity() {
     companion object {  // ~ static JAVA
@@ -53,9 +49,45 @@ class MainActivity : AppCompatActivity() {
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
 
+    private val listDeviceId = mutableListOf<String>("select your id device", "B5E5C221")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        listDeviceId.add("hihi")
+        listDeviceId.add("haha")
+        listDeviceId.add("hehe")
+
+        val spinner: Spinner = findViewById(R.id.spinner)
+
+//        // Create an ArrayAdapter using the string array and a default spinner layout
+//        ArrayAdapter.createFromResource(
+//            this,
+//            R.array.device_id_array,
+//            android.R.layout.simple_spinner_item
+//        ).also { adapter ->
+//            // Specify the layout to use when the list of choices appears
+//            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+//            // Apply the adapter to the spinner
+//            spinner.adapter = adapter
+//        }
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item, listDeviceId
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                deviceId = if (listDeviceId[position] === "select your id device") listDeviceId[1] else listDeviceId[position]
+                connectButton.text = getString(R.string.connect_to_device, deviceId)
+            }
+        }
 
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
         connectButton = findViewById(R.id.connect_button)

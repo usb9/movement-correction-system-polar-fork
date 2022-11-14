@@ -9,4 +9,10 @@
     <string name="range">Range</string>
     <string name="channels">Channels</string>
     <string name="ok">OK</string>
+
+    <string-array name="device_id_array">
+        <item>id1</item>
+        <item>id2</item>
+        <item>id3</item>
+    </string-array>
 </resources>
