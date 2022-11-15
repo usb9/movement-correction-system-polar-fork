@@ -9,6 +9,9 @@
     <string name="range">Range</string>
     <string name="channels">Channels</string>
     <string name="ok">OK</string>
+    <string name="auto_connect_toggle">Auto connect</string>
+    <string name="scan_devices">scan devices</string>
+    <string name="scanning_devices">stop device scan</string>
 
     <string-array name="device_id_array">
         <item>id1</item>

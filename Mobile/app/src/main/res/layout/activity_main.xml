@@ -16,9 +16,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <Button
+            android:id="@+id/auto_connect_button"
+            android:layout_width="197dp"
+            android:layout_height="wrap_content"
+            android:text="@string/auto_connect_toggle" />
+
+        <Button
+            android:id="@+id/scan_button"
+            android:layout_width="198dp"
+            android:layout_height="wrap_content"
+            android:text="@string/scan_devices" />
+
         <Spinner
             android:id="@+id/spinner"
-            android:layout_width="match_parent"
+            android:layout_width="198dp"
             android:layout_height="wrap_content" />
 
         <View
