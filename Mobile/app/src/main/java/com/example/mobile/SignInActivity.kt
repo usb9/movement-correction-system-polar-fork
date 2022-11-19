@@ -3,23 +3,19 @@ package com.example.mobile
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Button
 
-class MainActivity : AppCompatActivity() {
+class SignInActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_sign_in)
 
-        var logged: Boolean = true
-        var noNeedAccount: Boolean = true
+        val trainingButton = findViewById<Button>(R.id.no_need_account_button)
 
-        if (logged || noNeedAccount) {
+        trainingButton.setOnClickListener {
             val nextPage = Intent(this, HomeActivity::class.java)
             startActivity(nextPage)
-        } else {
-            val nextPage = Intent(this, SignInActivity::class.java)
-            startActivity(nextPage)
+            finish()
         }
-
-        finish()
     }
 }
