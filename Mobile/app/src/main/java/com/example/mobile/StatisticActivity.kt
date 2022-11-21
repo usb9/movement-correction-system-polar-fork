@@ -17,23 +17,42 @@ import kotlinx.android.synthetic.main.activity_statistic.*
 
 class StatisticActivity : AppCompatActivity() {
 
-   public val correctLable ="Correct"
-    public val incorrectLable ="Incorrect"
+       public val correctLable ="Correct"
+       public val incorrectLable ="Incorrect"
+
+     val dataPieChart: ArrayList<Float> = ArrayList()
+    val dataBarChart: ArrayList<ArrayList<Float>> = ArrayList()
+    val dataLineChart: ArrayList<ArrayList<Float>> = ArrayList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_statistic)
-        setupBarChartData()
 
-        setUpPieChartData()
+        dataPieChart.add(150f)
+        dataPieChart.add(50f)
+        setUpPieChartData(dataPieChart)
 
-        setupLineChartData()
+        var barChart_totalPunches :ArrayList<Float>  = ArrayList<Float>(listOf(30f,2f,4f,6f,8f,10f,22f))
+        var barChart_correctTimes :ArrayList<Float>  = ArrayList<Float>(listOf(10f,2f,3f,32f,22f,30f,12f))
+        var barChart_incorrectTime :ArrayList<Float>  = ArrayList<Float>(listOf(20f,22f,23f,22f,32f,20f,32f))
+        dataBarChart.add(barChart_totalPunches);
+        dataBarChart.add(barChart_correctTimes)
+        dataBarChart.add(barChart_incorrectTime)
+        setupBarChartData(dataBarChart)
+
+        var lineChart_incorrectTimes :ArrayList<Float>  = ArrayList<Float>(listOf(30f,2f,4f,6f,8f,10f,22f))
+        var lineChart_correctTimes :ArrayList<Float>  = ArrayList<Float>(listOf(10f,2f,3f,32f,22f,30f,12f))
+
+        dataLineChart.add(lineChart_correctTimes)
+        dataLineChart.add(lineChart_incorrectTimes)
+        setupLineChartData(dataLineChart)
 
 
     }
-    private fun setUpPieChartData() {
+    private fun setUpPieChartData(dataLineChart :  ArrayList<Float>) {
         //Set data value here
-        var correctTimes = 150f
-        var incorrectTimes = 50f
+        var correctTimes = dataLineChart[0]
+        var incorrectTimes = dataLineChart[1]
         //Create dataset for graph here
         val yVals = ArrayList<PieEntry>()
         yVals.add(PieEntry(correctTimes,correctLable))
@@ -64,10 +83,10 @@ class StatisticActivity : AppCompatActivity() {
 
     }
 
-    private fun setupLineChartData() {
+    private fun setupLineChartData(dataLineChart : ArrayList< ArrayList<Float>>) {
 
-        var correctTimes = floatArrayOf(30f,2f,4f,6f,8f,10f,22f)
-        var incorrectTimes = floatArrayOf(10f,2f,3f,32f,22f,30f,12f)
+        var correctTimes = dataLineChart[0]
+        var incorrectTimes = dataLineChart[1]
 
         val correctLine: ArrayList<Entry> = ArrayList()
         val incorrectLine: ArrayList<Entry> = ArrayList()
@@ -114,11 +133,12 @@ class StatisticActivity : AppCompatActivity() {
         lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
     }
 
-    private fun setupBarChartData() {
+    private fun setupBarChartData(dataBarChart : ArrayList< ArrayList<Float>>) {
         // create BarEntry for Bar Group
-        var totalPunches = floatArrayOf(30f,2f,4f,6f,8f,10f,22f)
-        var totalCorrectPunches = floatArrayOf(10f,2f,3f,32f,22f,30f,12f)
-        var totalIncorrectPunches = floatArrayOf(20f,22f,23f,22f,32f,20f,32f)
+
+        var totalPunches = dataBarChart[0]
+        var totalCorrectPunches =dataBarChart[1]
+        var totalIncorrectPunches = dataBarChart[2]
 
 
         val correctBar:ArrayList<BarEntry> = ArrayList()
