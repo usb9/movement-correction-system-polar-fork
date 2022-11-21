@@ -80,7 +80,7 @@ class StatisticActivity : AppCompatActivity() {
         pieChart.isDrawHoleEnabled = false
         pieChart.legend.isEnabled=false
         pieChart.description.isEnabled = false
-
+        pieChart.invalidate();
     }
 
     private fun setupLineChartData(dataLineChart : ArrayList< ArrayList<Float>>) {
@@ -128,9 +128,10 @@ class StatisticActivity : AppCompatActivity() {
         lineChart.legend.isEnabled = true
         lineChart.data.setValueTextSize(10F)
         lineChart.legend.horizontalAlignment=Legend.LegendHorizontalAlignment.CENTER
-        lineChart.setPinchZoom(false)
+        lineChart.setTouchEnabled(false)
 
         lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+        lineChart.invalidate()
     }
 
     private fun setupBarChartData(dataBarChart : ArrayList< ArrayList<Float>>) {
@@ -225,6 +226,7 @@ class StatisticActivity : AppCompatActivity() {
         barChart.setPinchZoom(false)
         barChart.data.setDrawValues(true)
         barChart.setFitBars(true);
+        barChart.setTouchEnabled(false)
         barChart.invalidate();
     }
 
