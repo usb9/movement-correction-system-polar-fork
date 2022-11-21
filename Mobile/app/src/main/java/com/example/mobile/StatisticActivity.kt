@@ -2,8 +2,11 @@
 package com.example.mobile
 
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.github.mikephil.charting.components.Legend
@@ -19,7 +22,7 @@ class StatisticActivity : AppCompatActivity() {
 
        public val correctLable ="Correct"
        public val incorrectLable ="Incorrect"
-
+    private lateinit var backButton: Button
      val dataPieChart: ArrayList<Float> = ArrayList()
     val dataBarChart: ArrayList<ArrayList<Float>> = ArrayList()
     val dataLineChart: ArrayList<ArrayList<Float>> = ArrayList()
@@ -27,6 +30,7 @@ class StatisticActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_statistic)
+        backButton = findViewById(R.id.btn_back)
 
         dataPieChart.add(150f)
         dataPieChart.add(50f)
@@ -46,6 +50,12 @@ class StatisticActivity : AppCompatActivity() {
         dataLineChart.add(lineChart_correctTimes)
         dataLineChart.add(lineChart_incorrectTimes)
         setupLineChartData(dataLineChart)
+
+
+        backButton.setOnClickListener{
+            val nextPage = Intent(this, HomeActivity::class.java)
+            startActivity(nextPage)
+        }
 
 
     }

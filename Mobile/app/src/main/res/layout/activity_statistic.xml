@@ -12,6 +12,63 @@
         android:orientation="vertical"
         tools:context="com.example.mansigoel.charts.MainActivity">
 
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="88dp">
+
+            <ImageView
+                android:id="@+id/splash_imageview"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:layout_centerInParent="true"
+                android:background="#C3FF45" />
+
+            <Button
+                android:id="@+id/btn_back"
+                android:layout_width="54dp"
+                android:layout_height="31dp"
+                android:layout_centerVertical="true"
+                android:background="@drawable/ic_baseline_arrow_back_24"
+                android:focusable="false"
+
+                android:textColor="#000000"
+                android:textSize="20dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="50dp"
+                android:layout_marginBottom="20dip"
+                android:padding="12dip"
+                android:text="Statistics"
+                android:textColor="#000000"
+                android:textSize="30dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentRight="true"
+                android:padding="12dip"
+                android:text="Spent practicing time:"
+                android:textColor="#000000"
+                android:textSize="20dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginRight="6dp"
+                android:layout_marginBottom="-5dp"
+                android:padding="12dip"
+                android:text="4 hours 32 minutes"
+                android:textColor="#000000"
+                android:textSize="20dp" />
+
+        </RelativeLayout>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -19,6 +76,7 @@
             android:text="Bar Chart"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
             android:textStyle="bold"
+            android:layout_marginTop="8dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -33,6 +91,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:layout_marginTop="8dp"
             android:text="Pie Chart"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
             android:textStyle="bold"
@@ -50,6 +109,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Line Chart"
+            android:layout_marginTop="8dp"
             android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
             android:textStyle="bold"
             app:layout_constraintLeft_toLeftOf="parent"
