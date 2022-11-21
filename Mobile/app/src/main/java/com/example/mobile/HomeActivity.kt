@@ -13,6 +13,7 @@ class HomeActivity : AppCompatActivity() {
         val trainingButton = findViewById<Button>(R.id.training_button)
         val helpButton = findViewById<Button>(R.id.help_button)
         val settingButton = findViewById<Button>(R.id.setting_button)
+        val staticsButton = findViewById<Button>(R.id.statics_button)
 
         trainingButton.setOnClickListener {
             val nextPage = Intent(this, TrainingActivity::class.java)
@@ -23,6 +24,12 @@ class HomeActivity : AppCompatActivity() {
             val nextPage = Intent(this, HelpActivity::class.java)
             startActivity(nextPage)
         }
+
+        staticsButton.setOnClickListener {
+            val nextPage = Intent(this, StatisticActivity::class.java)
+            startActivity(nextPage)
+        }
+
 
         settingButton.setOnClickListener {
             val nextPage = Intent(this, SettingActivity::class.java)

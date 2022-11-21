@@ -8,10 +8,10 @@
 
     <Button
         android:id="@+id/help_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="71dp"
+        android:layout_width="154dp"
+        android:layout_height="51dp"
+        android:layout_marginEnd="68dp"
+        android:layout_marginBottom="140dp"
         android:text="Help"
         app:layout_constraintBottom_toTopOf="@+id/setting_button"
         app:layout_constraintEnd_toEndOf="@+id/setting_button" />
@@ -27,10 +27,21 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
+        android:id="@+id/statics_button"
+        android:layout_width="158dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="252dp"
+        android:text="Statics"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.517"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
         android:id="@+id/setting_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="331dp"
+        android:layout_width="295dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="360dp"
         android:text="Settings"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
