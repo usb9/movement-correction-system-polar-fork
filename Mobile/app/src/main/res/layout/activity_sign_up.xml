@@ -77,5 +77,20 @@
         android:drawableLeft="@drawable/ic_key"
         />
 
+    <Button
+        android:id="@+id/button_signup"
+        android:layout_width="245dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="82dp"
+        android:layout_marginTop="548dp"
+        android:backgroundTint="#888B6D"
+        android:text="SIGN UP"
+        android:textColor="#C3FF45"
+        android:textColorHighlight="#C3FF45"
+        android:textSize="20sp"
+        android:textStyle="bold" />
 
 </RelativeLayout>
