@@ -3,6 +3,7 @@ package com.example.mobile
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 
 class HomeActivity : AppCompatActivity() {
@@ -14,7 +15,9 @@ class HomeActivity : AppCompatActivity() {
         val helpButton = findViewById<Button>(R.id.help_button)
         val settingButton = findViewById<Button>(R.id.setting_button)
         val staticsButton = findViewById<Button>(R.id.statics_button)
+        val profileName=intent.getStringExtra("Username")
 
+        Log.e("TAG",profileName.toString())
         trainingButton.setOnClickListener {
             val nextPage = Intent(this, TrainingActivity::class.java)
             startActivity(nextPage)

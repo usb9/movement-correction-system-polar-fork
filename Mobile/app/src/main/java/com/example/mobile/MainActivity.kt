@@ -9,8 +9,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
         var logged: Boolean = false
-        var noNeedAccount: Boolean = false
+        var noNeedAccount: Boolean = intent.getBooleanExtra("Login",false)
 
         if (logged || noNeedAccount) {
             val nextPage = Intent(this, HomeActivity::class.java)
@@ -22,4 +23,5 @@ class MainActivity : AppCompatActivity() {
 
         finish()
     }
+
 }
