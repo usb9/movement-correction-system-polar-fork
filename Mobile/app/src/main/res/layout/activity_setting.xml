@@ -9,9 +9,37 @@
     <TextView
         android:id="@+id/textView"
         android:layout_width="148dp"
-        android:layout_height="50dp"
-        android:text="Settings"
-        tools:layout_editor_absoluteX="194dp"
-        tools:layout_editor_absoluteY="244dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="152dp"
+        android:layout_marginBottom="436dp"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/scan_button"
         tools:ignore="MissingConstraints" />
+
+    <Button
+        android:id="@+id/scan_button"
+        android:layout_width="146dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="3dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="13dp"
+        android:layout_marginBottom="136dp"
+        android:text="@string/scan_devices"
+        app:layout_constraintBottom_toTopOf="@+id/textView"
+        app:layout_constraintEnd_toStartOf="@+id/spinner"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:layout_marginBottom="160dp"
+        app:layout_constraintBottom_toTopOf="@+id/textView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/scan_button"
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

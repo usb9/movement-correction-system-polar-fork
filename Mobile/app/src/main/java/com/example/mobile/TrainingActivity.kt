@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Pair
-import android.view.View
 import android.widget.*
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +21,9 @@ import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
+import java.io.BufferedReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.util.*
 
 
@@ -33,38 +35,51 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private var deviceId = ""
+    private val fileName: String = "MyDevicesId.txt"
 
     private val api: PolarBleApi by lazy {
         // Notice PolarBleApi.ALL_FEATURES are enabled
         PolarBleApiDefaultImpl.defaultImplementation(applicationContext, PolarBleApi.ALL_FEATURES)
     }
 
-    private var autoConnectDisposable: Disposable? = null
-    private var scanDisposable: Disposable? = null
     private var movementDisposable: Disposable? = null
 
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
-    private lateinit var autoConnectButton: Button
-    private lateinit var scanButton: Button
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
-
-    // ATTENTION! Replace with the device ID from your device at index 1st of array below.
-    private val listDeviceId = mutableListOf<String>("select one device", "B5E5C221")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
 
-        autoConnectButton = findViewById(R.id.auto_connect_button)
-        scanButton = findViewById(R.id.scan_button)
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
+
+        try {
+            var fin: FileInputStream? = null
+            fin = openFileInput(fileName)
+            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+            val stringBuilder: StringBuilder = StringBuilder()
+            var text: String? = null
+            Log.d("hihihaha", "------------------------------------$deviceId")
+            while (run {
+                    text = bufferedReader.readLine()
+                    text
+                } != null) {
+                stringBuilder.append(text)
+                //text?.let { listDeviceId.add(it) }
+                text?.let { deviceId = it }
+            }
+            Log.d("hihihaha", "------------------------------------$deviceId")
+        } catch (ex: Exception) {
+            Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+        }
 
         api.setPolarFilter(false)
         api.setApiLogger { s: String -> Log.d(API_LOGGER_TAG, s) }
@@ -121,68 +136,7 @@ class TrainingActivity : AppCompatActivity() {
             }
         })
 
-        val spinner: Spinner = findViewById(R.id.spinner)
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item, listDeviceId
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
-
-        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                deviceId = if (listDeviceId[position] == "select one device") listDeviceId[1] else listDeviceId[position]
-                connectButton.text = getString(R.string.connect_to_device, deviceId)
-            }
-        }
-
-        autoConnectButton.setOnClickListener {
-            if (autoConnectDisposable != null) {
-                autoConnectDisposable?.dispose()
-            }
-            autoConnectDisposable = api.autoConnectToDevice(-60, "180D", null)
-                .subscribe(
-                    {
-                        showToast("auto connect search complete")
-                        // Log.d(TAG, "auto connect search complete")
-                    },
-                    { throwable: Throwable -> Log.e(TAG, "" + throwable.toString()) }
-                )
-        }
-
-        scanButton.setOnClickListener {
-            val isDisposed = scanDisposable?.isDisposed ?: true
-            if (isDisposed) {
-                toggleButtonDown(scanButton, R.string.scanning_devices)
-                scanDisposable = api.searchForDevice()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                        { polarDeviceInfo: PolarDeviceInfo ->
-                            listDeviceId.add("${polarDeviceInfo.deviceId}")
-                            showToast("Found and added ${polarDeviceInfo.deviceId}")
-                            // Log.d(TAG, "polar device found id: " + polarDeviceInfo.deviceId + " address: " + polarDeviceInfo.address + " rssi: " + polarDeviceInfo.rssi + " name: " + polarDeviceInfo.name + " isConnectable: " + polarDeviceInfo.isConnectable)
-                        },
-                        { error: Throwable ->
-                            toggleButtonUp(scanButton, "Scan devices")
-                            showToast("$error")
-                            // Log.e(TAG, "Device scan failed. Reason $error")
-                        },
-                        {
-                            toggleButtonUp(scanButton, "Scan devices")
-                            scanDisposable?.dispose()
-                            showToast("complete")
-                            // Log.d(TAG, "complete")
-                        }
-                    )
-            } else {
-                toggleButtonUp(scanButton, "Scan devices")
-                scanDisposable?.dispose()
-            }
-        }
-
-        connectButton.text = getString(R.string.connect_to_device, listDeviceId[1])
+        connectButton.text = getString(R.string.connect_to_device, deviceId)
         connectButton.setOnClickListener {
             try {
                 if (deviceConnected) {

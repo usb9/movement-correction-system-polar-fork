@@ -5,10 +5,17 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import java.io.BufferedReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
 
 class HomeActivity : AppCompatActivity() {
     var mFirebaseAuth = FirebaseAuth.getInstance();
+
+    private val fileName: String = "MyDevicesId.txt"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
@@ -23,8 +30,20 @@ class HomeActivity : AppCompatActivity() {
 
         Log.e("TAG",mFirebaseUser.toString())
         trainingButton.setOnClickListener {
-            val nextPage = Intent(this, TrainingActivity::class.java)
-            startActivity(nextPage)
+            try {
+                var fin: FileInputStream? = null
+                fin = openFileInput(fileName)
+                var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+                val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+
+                val nextPage = Intent(this, TrainingActivity::class.java)
+                startActivity(nextPage)
+            } catch (ex: Exception) {
+                if (ex.message?.contains("No such file or directory") == true) {
+                    val nextPage = Intent(this, SettingActivity::class.java)
+                    startActivity(nextPage)
+                }
+            }
         }
 
         helpButton.setOnClickListener {
