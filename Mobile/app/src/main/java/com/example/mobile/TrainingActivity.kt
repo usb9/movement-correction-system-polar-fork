@@ -69,7 +69,6 @@ class TrainingActivity : AppCompatActivity() {
             val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
             val stringBuilder: StringBuilder = StringBuilder()
             var text: String? = null
-            Log.d("hihihaha", "------------------------------------$deviceId")
             while (run {
                     text = bufferedReader.readLine()
                     text
@@ -78,7 +77,6 @@ class TrainingActivity : AppCompatActivity() {
                 //text?.let { listDeviceId.add(it) }
                 text?.let { deviceId = it }
             }
-            Log.d("hihihaha", "------------------------------------$deviceId")
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }

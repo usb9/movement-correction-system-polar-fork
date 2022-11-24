@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import java.io.FileOutputStream
 
 class SignInActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
@@ -50,9 +51,20 @@ class SignInActivity : AppCompatActivity() {
         }
 
 
-        //navigation
-        val trainingButton = findViewById<TextView>(R.id.no_need_account_button)
-        trainingButton.setOnClickListener {
+        //navigation home screen
+        val noNeedAccountButton = findViewById<TextView>(R.id.no_need_account_button)
+        noNeedAccountButton.setOnClickListener {
+            //logic for save user's selection
+            val fileName: String = "DoINeedAccount.txt"
+            try {
+                var fout: FileOutputStream = openFileOutput(fileName, MODE_PRIVATE)
+                fout.write("no".toByteArray())
+                fout.close()
+            } catch (ex: Exception) {
+                //Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+                Log.e("hihihaha", "Error: ${ex.message}")
+            }
+
             val nextPage = Intent(this, HomeActivity::class.java)
             startActivity(nextPage)
 
