@@ -8,7 +8,7 @@
 
     <LinearLayout
         android:id="@+id/buttons_container"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:orientation="vertical"
@@ -19,10 +19,10 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="2dp"
             android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
             android:layout_marginEnd="10dp"
+            android:layout_marginBottom="2dp"
             android:background="@android:color/white" />
 
         <Button
@@ -34,45 +34,66 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="2dp"
             android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
             android:layout_marginEnd="10dp"
-            android:background="@android:color/white"/>
-
-        <Button
-            android:id="@+id/movement_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/start_movement_stream" />
+            android:layout_marginBottom="2dp"
+            android:background="@android:color/white" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="2dp"
             android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
             android:layout_marginEnd="10dp"
+            android:layout_marginBottom="2dp"
             android:background="@android:color/white" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/view_X_container"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="@+id/buttons_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttons_container">
 
-        <TextView
-            android:id="@+id/view_acc_X"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:textAlignment="center"
-            android:textColor="#C00000"
-            android:textSize="30sp"
-            tools:text="100" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/view_acc_X"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="#C00000"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/movement_button"
+        tools:text="100" />
+
+    <TextView
+        android:id="@+id/view_battery"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="75dp"
+        android:textAlignment="center"
+        android:textColor="#C00000"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="100%" />
+
+    <Button
+        android:id="@+id/movement_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="43dp"
+        android:text="@string/start_movement_stream"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/view_battery" />
 </androidx.constraintlayout.widget.ConstraintLayout>

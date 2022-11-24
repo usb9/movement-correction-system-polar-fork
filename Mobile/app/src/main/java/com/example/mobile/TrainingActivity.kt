@@ -50,6 +50,7 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
+    private lateinit var textViewBattery: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +60,7 @@ class TrainingActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
+        textViewBattery = findViewById(R.id.view_battery)
 
         try {
             var fin: FileInputStream? = null
@@ -128,7 +130,9 @@ class TrainingActivity : AppCompatActivity() {
             }
 
             override fun batteryLevelReceived(identifier: String, level: Int) {
-                Log.d(TAG, "BATTERY LEVEL: $level")
+                Log.d(TAG, "Battery level $identifier $level%")
+                val batteryLevelText = "$level% battery"
+                textViewBattery.append(batteryLevelText)
             }
 
             override fun polarFtpFeatureReady(s: String) {
