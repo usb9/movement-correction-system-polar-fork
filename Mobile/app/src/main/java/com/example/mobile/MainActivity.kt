@@ -10,8 +10,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
 
-        var logged: Boolean = false
-        var noNeedAccount: Boolean = intent.getBooleanExtra("Login",false)
+        var logged: Boolean = intent.getBooleanExtra("Login",false)
+        var noNeedAccount: Boolean = intent.getBooleanExtra("isNoAccount",false)
 
         if (logged || noNeedAccount) {
             val nextPage = Intent(this, HomeActivity::class.java)
