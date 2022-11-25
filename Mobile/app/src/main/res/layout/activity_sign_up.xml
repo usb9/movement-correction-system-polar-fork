@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SignUpActivity">
+    tools:context=".SignUpActivity"
+    android:background="#FCFFEC">
+
 
 
     <TextView
@@ -29,15 +31,14 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="80dp"
-        android:layout_marginTop="339dp"
+        android:layout_marginTop="340dp"
         android:layout_marginEnd="80dp"
-        android:layout_marginBottom="307dp"
+        android:layout_marginBottom="297dp"
+        android:drawableLeft="@drawable/ic_email"
         android:ems="10"
         android:hint="Email"
-        android:textColorHint="#3B3C32"
         android:inputType="textEmailAddress"
-        android:drawableLeft="@drawable/ic_email"
-        />
+        android:textColorHint="#3B3C32" />
 
     <EditText
         android:id="@+id/username_signup"
@@ -48,15 +49,14 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="80dp"
-        android:layout_marginTop="262dp"
+        android:layout_marginTop="265dp"
         android:layout_marginEnd="80dp"
-        android:layout_marginBottom="384dp"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:textColorHint="#3B3C32"
-        android:hint="Username"
+        android:layout_marginBottom="371dp"
         android:drawableLeft="@drawable/ic_person"
-        />
+        android:ems="10"
+        android:hint="Username"
+        android:inputType="textPersonName"
+        android:textColorHint="#3B3C32" />
 
     <EditText
         android:id="@+id/password_signup"
@@ -67,15 +67,14 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="80dp"
-        android:layout_marginTop="426dp"
+        android:layout_marginTop="415dp"
         android:layout_marginEnd="80dp"
         android:layout_marginBottom="221dp"
-        android:ems="10"
-        android:inputType="textPassword"
-        android:textColorHint="#3B3C32"
-        android:hint="Password"
         android:drawableLeft="@drawable/ic_key"
-        />
+        android:ems="10"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:textColorHint="#3B3C32" />
 
     <Button
         android:id="@+id/button_signup"
@@ -91,6 +90,7 @@
         android:textColor="#C3FF45"
         android:textColorHighlight="#C3FF45"
         android:textSize="20sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        app:cornerRadius="10dp" />
 
 </RelativeLayout>

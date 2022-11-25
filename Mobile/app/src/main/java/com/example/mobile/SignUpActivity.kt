@@ -39,8 +39,19 @@ class SignUpActivity : AppCompatActivity() {
             finish()
         }
 
+
         signupButton.setOnClickListener{
-                createAccount(emailText.text.toString(),passwordText.text.toString(),usernameText.text.toString())
+            if ( emailText.text.toString().isNotEmpty()
+                && passwordText.text.toString().isNotEmpty()
+                && usernameText.text.toString().isNotEmpty()) {
+                createAccount(
+                    emailText.text.toString(),
+                    passwordText.text.toString(),
+                    usernameText.text.toString()
+                )
+            }else {
+                Toast.makeText(this, "Empty fields are not Allowed !", Toast.LENGTH_SHORT).show()
+            }
         }
 
     }
