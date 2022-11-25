@@ -31,8 +31,8 @@ class SignInActivity : AppCompatActivity() {
 
         passwordText=findViewById(R.id.editText_password_signin)
 
-        //onStart()
-     signOut()
+       // onStart()
+        signOut()
         //declare the animation
         val topTomiddle = AnimationUtils.loadAnimation(this, R.anim.toptomiddle)
         val scaleTobig = AnimationUtils.loadAnimation(this, R.anim.scaletobig)
@@ -66,6 +66,7 @@ class SignInActivity : AppCompatActivity() {
             }
 
             val nextPage = Intent(this, HomeActivity::class.java)
+            nextPage.putExtra("isNoAccount",true)
             startActivity(nextPage)
 
         }
