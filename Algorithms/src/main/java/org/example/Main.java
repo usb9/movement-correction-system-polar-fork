@@ -10,6 +10,8 @@ import java.util.List;
 public class Main {
 
   public static List<Float> frameBuffer = new ArrayList<>();
+
+  public static List<Double> meanSquareRootBuffer = new ArrayList<>();
   public static int SAMPLING_RATE = 25;   // in Hz
   public static int FRAME_LENGTH_IN_MS = 1000 / SAMPLING_RATE;
   public static double MPS_TO_KMH = 3.6;
@@ -81,22 +83,31 @@ public class Main {
     // ------ speed calculation     ------
 
     float speedInMps = 0;
-
+    float speedMSR = 0;
     for (int i = startIndex; i < endIndex - 1; ++i) {
       speedInMps += (FRAME_LENGTH_IN_MS * Math.abs(frameBuffer.get(i)));
-
-      if (i < endIndex - 2)
+      speedMSR += (FRAME_LENGTH_IN_MS * Math.abs(meanSquareRootBuffer.get(i)));
+      if (i < endIndex - 2) {
         speedInMps += ((FRAME_LENGTH_IN_MS * Math.abs(frameBuffer.get(i)
             - frameBuffer.get(i + 1))) / 2.0);
-      else
+        speedMSR += ((FRAME_LENGTH_IN_MS * Math.abs(meanSquareRootBuffer.get(i)
+            - meanSquareRootBuffer.get(i + 1))) / 2.0);
+      }
+      else {
         speedInMps += (((FRAME_LENGTH_IN_MS / 2.0) * Math.abs(frameBuffer.get(i))) / 2.0);
-
+        speedMSR += (((FRAME_LENGTH_IN_MS / 2.0) * Math.abs(meanSquareRootBuffer.get(i))) / 2.0);
+      }
       speedInMps -= FRAME_LENGTH_IN_MS * 10.0;
+      speedMSR -= FRAME_LENGTH_IN_MS * 5.74;
     }
 
     speedInMps /= 1000; //framelength is in ms
+    speedMSR /= 1000;
+
     System.out.println("Apprx. speed in meters per second: " + speedInMps);
     System.out.println("Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
+    System.out.println("Apprx. speed(MSR) in meters per second: " + speedMSR);
+    System.out.println("Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
     // ------ end speed calculation ------
 
   }
@@ -118,12 +129,14 @@ public class Main {
         String[] values = line.split(",");
 
         float x = Float.valueOf(values[0]);
-        //float y = Float.valueOf(values[1]);     // currently not used
-        //float z = Float.valueOf(values[2]);
+        float y = Float.valueOf(values[1]);     // currently not used
+        float z = Float.valueOf(values[2]);
 
+        double meanSquareRoot = Math.sqrt((((x * x) + (y * y) + (z * z)) / 3.0));
         frameBuffer.add(x);                       // new element at the end,
         frameBuffer.remove(0);              // oldest element removed
-
+        meanSquareRootBuffer.add(meanSquareRoot);
+        meanSquareRootBuffer.remove(0);
 
 
         /*
@@ -184,6 +197,7 @@ public class Main {
 
     for(int i = 0; i < 20; ++i) {       // buffer size should always stay the same after adding
       frameBuffer.add((float) i + 1);   // real data!
+      meanSquareRootBuffer.add((double) i + 1);
     }
 
     analyzeDataFile(FILE_NAME);
