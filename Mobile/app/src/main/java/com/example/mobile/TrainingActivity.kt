@@ -1,6 +1,7 @@
 package com.example.mobile
 
 import android.Manifest
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -22,7 +23,9 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.io.BufferedReader
+import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.util.*
 
@@ -51,6 +54,9 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+    private val fname: String = "current_session.csv"
+    private var file: File? = null
+    private var fon: FileOutputStream? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +67,11 @@ class TrainingActivity : AppCompatActivity() {
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
+
+        // file, outputstream for acc data storage
+        Log.d(TAG, "path: " + filesDir.absolutePath)
+        file = File(filesDir.absolutePath, fname)
+        fon = FileOutputStream(file)
 
         try {
             var fin: FileInputStream? = null
@@ -170,6 +181,7 @@ class TrainingActivity : AppCompatActivity() {
                             for (data in polarAccelerometerData.samples) {
                                 Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                 textViewAccX.text = "X: ${data.x.toString()}"
+                                fon!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
                             }
                         },
                         { error: Throwable ->
