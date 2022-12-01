@@ -4,7 +4,9 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.animation.AnimationUtils
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import java.io.BufferedReader
@@ -61,5 +63,17 @@ class HomeActivity : AppCompatActivity() {
             val nextPage = Intent(this, SettingActivity::class.java)
             startActivity(nextPage)
         }
+
+        // declare the animation
+        val middleTotop = AnimationUtils.loadAnimation(this, R.anim.middletotop)
+        val middleTobottom = AnimationUtils.loadAnimation(this, R.anim.middletobottom)
+        
+
+        val waveTop = findViewById<ImageView>(R.id.imageView_wave_top)
+        val waveBottom = findViewById<ImageView>(R.id.imageView_wave_bottom)
+
+        //set tha animation
+        waveTop.startAnimation(middleTotop)
+        waveBottom.startAnimation(middleTobottom)
     }
 }
