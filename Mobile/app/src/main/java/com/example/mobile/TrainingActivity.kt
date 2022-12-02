@@ -1,7 +1,6 @@
 package com.example.mobile
 
 import android.Manifest
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -50,13 +49,16 @@ class TrainingActivity : AppCompatActivity() {
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
+    // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+
+    // Session File
     private val fname: String = "current_session.csv"
     private var file: File? = null
-    private var fon: FileOutputStream? = null
+    private var fos: FileOutputStream? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,8 +73,11 @@ class TrainingActivity : AppCompatActivity() {
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
         file = File(filesDir.absolutePath, fname)
-        fon = FileOutputStream(file)
+        fos = FileOutputStream(file)
 
+        /*
+         * get deviceId from MyDevicesId.txt
+         */
         try {
             var fin: FileInputStream? = null
             fin = openFileInput(fileName)
@@ -92,9 +97,15 @@ class TrainingActivity : AppCompatActivity() {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
 
+
+        /*
+         * All ble devices discoverable by searchForDevice, api logging enabled
+         * bluetooth connectivity, mainly api callback functions
+         */
         api.setPolarFilter(false)
         api.setApiLogger { s: String -> Log.d(API_LOGGER_TAG, s) }
         api.setApiCallback(object : PolarBleApiCallback() {
+            // disable buttons when phone bluetooth off
             override fun blePowerStateChanged(powered: Boolean) {
                 Log.d(TAG, "BLE power: $powered")
                 bluetoothEnabled = powered
@@ -107,6 +118,7 @@ class TrainingActivity : AppCompatActivity() {
                 }
             }
 
+            // get id from connected device, toggle connect button
             override fun deviceConnected(polarDeviceInfo: PolarDeviceInfo) {
                 Log.d(TAG, "CONNECTED: " + polarDeviceInfo.deviceId)
                 deviceId = polarDeviceInfo.deviceId
@@ -115,10 +127,12 @@ class TrainingActivity : AppCompatActivity() {
                 toggleButtonDown(connectButton, buttonText)
             }
 
+            // only logging
             override fun deviceConnecting(polarDeviceInfo: PolarDeviceInfo) {
                 Log.d(TAG, "CONNECTING: " + polarDeviceInfo.deviceId)
             }
 
+            // toggle connect button
             override fun deviceDisconnected(polarDeviceInfo: PolarDeviceInfo) {
                 Log.d(TAG, "DISCONNECTED: " + polarDeviceInfo.deviceId)
                 deviceConnected = false
@@ -126,6 +140,7 @@ class TrainingActivity : AppCompatActivity() {
                 toggleButtonUp(connectButton, buttonText)
             }
 
+            // only logging
             override fun streamingFeaturesReady(
                 identifier: String, features: Set<PolarBleApi.DeviceStreamingFeature>
             ) {
@@ -134,21 +149,29 @@ class TrainingActivity : AppCompatActivity() {
                 }
             }
 
+            // UUID logging
             override fun disInformationReceived(identifier: String, uuid: UUID, value: String) {
                 Log.d(TAG, "uuid: $uuid value: $value")
             }
 
+            // update battery textView
             override fun batteryLevelReceived(identifier: String, level: Int) {
                 Log.d(TAG, "Battery level $identifier $level%")
                 val batteryLevelText = "$level% battery"
                 textViewBattery.append(batteryLevelText)
             }
 
+            // works only with oh10 anyways
             override fun polarFtpFeatureReady(s: String) {
                 Log.d(TAG, "FTP ready")
             }
         })
 
+        /*
+         * Connect button
+         * no connection -> connect
+         * already connected -> disconnect
+         */
         connectButton.text = getString(R.string.connect_to_device, deviceId)
         connectButton.setOnClickListener {
             try {
@@ -167,6 +190,11 @@ class TrainingActivity : AppCompatActivity() {
             }
         }
 
+        /*
+         * Acc stream button
+         * Start stream, send Data to mainThread
+         * toggle button
+         */
         movementButton.setOnClickListener {
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
@@ -181,7 +209,7 @@ class TrainingActivity : AppCompatActivity() {
                             for (data in polarAccelerometerData.samples) {
                                 Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                 textViewAccX.text = "X: ${data.x.toString()}"
-                                fon!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
                             }
                         },
                         { error: Throwable ->
@@ -200,6 +228,7 @@ class TrainingActivity : AppCompatActivity() {
             }
         }
 
+        // permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT), PERMISSION_REQUEST_CODE)
@@ -209,8 +238,11 @@ class TrainingActivity : AppCompatActivity() {
         } else {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
-    }
+    }   // onCreate end
 
+    /*
+     * check if settings for feature are available
+     */
     private fun requestStreamSettings(identifier: String, feature: PolarBleApi.DeviceStreamingFeature): Flowable<PolarSensorSetting> {
         val availableSettings = api.requestStreamSettings(identifier, feature)
         val allSettings = api.requestFullStreamSettings(identifier, feature)
@@ -218,6 +250,7 @@ class TrainingActivity : AppCompatActivity() {
                 Log.w(TAG, "Full stream settings are not available for feature $feature. REASON: $error")
                 PolarSensorSetting(emptyMap())
             }
+        // Single -> reactive pattern(similar to observable in observer patter)
         return Single.zip(availableSettings, allSettings) { available: PolarSensorSetting, all: PolarSensorSetting ->
             if (available.settings.isEmpty()) {
                 throw Throwable("Settings are not available")
@@ -227,7 +260,7 @@ class TrainingActivity : AppCompatActivity() {
                 return@zip android.util.Pair(available, all)
             }
         }
-            .observeOn(AndroidSchedulers.mainThread())
+            .observeOn(AndroidSchedulers.mainThread())      // send available settings to mainThread, create settings dialog
             .toFlowable()
             .flatMap(
                 Function { sensorSettings: android.util.Pair<PolarSensorSetting, PolarSensorSetting> ->
@@ -240,6 +273,9 @@ class TrainingActivity : AppCompatActivity() {
             )
     }
 
+    /*
+     * Activity lifecycle
+     */
     public override fun onPause() {
         super.onPause()
     }
@@ -254,6 +290,9 @@ class TrainingActivity : AppCompatActivity() {
         api.shutDown()
     }
 
+    /*
+     * Toggle button text
+     */
     private fun toggleButtonDown(button: Button, text: String? = null) {
         toggleButton(button, true, text)
     }
@@ -270,6 +309,7 @@ class TrainingActivity : AppCompatActivity() {
         toggleButton(button, false, getString(resourceId))
     }
 
+    // set button color on toggle
     private fun toggleButton(button: Button, isDown: Boolean, text: String? = null) {
         if (text != null) button.text = text
 
