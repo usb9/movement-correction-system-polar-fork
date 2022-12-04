@@ -10,6 +10,8 @@ package com.example.mobile;
  * Date: 1.12.2022
  */
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +54,7 @@ public class PunchAnalyzer {
     }
 
     public void nextFrame(float x, float y, float z) {
+        // Log.d("My draft", "--------------------------------- nextFrame worked");
 
         x *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
         y *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
@@ -78,7 +81,7 @@ public class PunchAnalyzer {
          * multiple punches
          */
         if(X >= X_PUNCH_THRESHOLD && !ignoreFrames) {
-            System.out.println("X over 75: Punch recognized");  // Punch recognised
+            Log.d("Algorithm", "X over 75: Punch recognized");  // Punch recognised
             ignoreFrames = true;
             ignoreCount = PUNCH_BLOCKED_FRAMES;
 
@@ -102,11 +105,12 @@ public class PunchAnalyzer {
         if (identificationCount > 0) {
             --identificationCount;
             if (X < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
-                System.out.println("correct Punch!");
+                Log.d("Algorithm", "correct Punch!");
                 identificationCount = 0;        // reset to prevent counting multiple times
             } else if (identificationCount == 0)
-                System.out.println("Incorrect Punch!");
+                Log.d("Algorithm", "Incorrect Punch!");
         }
+
     }
 
     /*
@@ -117,11 +121,11 @@ public class PunchAnalyzer {
         int startIndex= findStartIndex();
         int endIndex = findEndIndex();
 
-        System.out.println("Start Index: " + startIndex);
-        System.out.println("End Index: " + endIndex);
+        Log.d("Algorithm", "Start Index: " + startIndex);
+        Log.d("Algorithm", "End Index: " + endIndex);
 
         if(startIndex == -1 || endIndex == -1) {
-            System.out.println("Speed calculation: Index error!");
+            Log.d("Algorithm", "Speed calculation: Index error!");
             return;
         }
 
@@ -149,10 +153,10 @@ public class PunchAnalyzer {
         speedInMps /= 1000; //framelength is in ms
         speedMSR /= 1000;
 
-        System.out.println("Apprx. speed in meters per second: " + speedInMps);
-        System.out.println("Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
-        System.out.println("Apprx. speed(MSR) in meters per second: " + speedMSR);
-        System.out.println("Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
+        Log.d("Algorithm", "Apprx. speed in meters per second: " + speedInMps);
+        Log.d("Algorithm", "Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
+        Log.d("Algorithm", "Apprx. speed(MSR) in meters per second: " + speedMSR);
+        Log.d("Algorithm", "Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
         // ------ end speed calculation ------
 
     }
@@ -174,13 +178,13 @@ public class PunchAnalyzer {
                 startIndex = frameBufferIndex;
                 continueStartSearch = false;
                 for (int i = 0; i < xValueBuffer.size(); ++i) {    // only for debugging
-                    System.out.println(i + ": " + xValueBuffer.get(i));
+                    Log.d("Algorithm", "i: " + xValueBuffer.get(i));
                 }
             }
 
             if (frameBufferIndex == 0) {
                 continueStartSearch = false;
-                System.out.println("Start not found!");
+                Log.d("Algorithm", "Start not found!");
                 startIndex = -1;
             }
             --frameBufferIndex;
@@ -205,7 +209,7 @@ public class PunchAnalyzer {
 
             if (frameBufferIndex == 0) {
                 continueEndSearch = false;
-                System.out.println("End not found!");
+                Log.d("Algorithm", "End not found!");
                 endIndex = -1;
             }
             --frameBufferIndex;
