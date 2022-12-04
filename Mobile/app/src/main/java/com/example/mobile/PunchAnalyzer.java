@@ -20,6 +20,11 @@ public class PunchAnalyzer {
     private int FRAME_LENGTH_IN_MS;
     public static final double MPS_TO_KMH = 3.6;   // m/s -> km/h
 
+    // Punch result
+    public boolean isPunch;
+    public boolean isCorrectPunch;
+    public float mySpeed;
+
     // Storage of 20 consecutive raw x values, meanSquareRoot in these buffers
     private List<Float> xValueBuffer = new ArrayList<>();
     private List<Double> meanSquareRootBuffer = new ArrayList<>();
@@ -82,6 +87,8 @@ public class PunchAnalyzer {
          */
         if(X >= X_PUNCH_THRESHOLD && !ignoreFrames) {
             Log.d("Algorithm", "X over 75: Punch recognized");  // Punch recognised
+
+            isPunch = true;
             ignoreFrames = true;
             ignoreCount = PUNCH_BLOCKED_FRAMES;
 
@@ -106,17 +113,22 @@ public class PunchAnalyzer {
             --identificationCount;
             if (X < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
                 Log.d("Algorithm", "correct Punch!");
+                isCorrectPunch = true;
                 identificationCount = 0;        // reset to prevent counting multiple times
-            } else if (identificationCount == 0)
+            } else if (identificationCount == 0) {
                 Log.d("Algorithm", "Incorrect Punch!");
+                isCorrectPunch = false;
+            }
         }
 
+        // Log.d("My draft", "--------------------------------- analyzeX");
     }
 
     /*
      * Calculates Punch velocity, currently prints result to console
      */
     private void calculatePunchVelocity() {
+        // Log.d("My draft", "--------------------------------- calculatePunchVelocity");
 
         int startIndex= findStartIndex();
         int endIndex = findEndIndex();
@@ -157,6 +169,8 @@ public class PunchAnalyzer {
         Log.d("Algorithm", "Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
         Log.d("Algorithm", "Apprx. speed(MSR) in meters per second: " + speedMSR);
         Log.d("Algorithm", "Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
+
+        mySpeed = speedMSR;
         // ------ end speed calculation ------
 
     }

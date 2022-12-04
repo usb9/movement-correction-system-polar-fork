@@ -52,15 +52,13 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+    private lateinit var textViewPunchResult: TextView
 
     // Session File
     private val fname: String = "current_session.csv"
     private var file: File? = null
     private var fos: FileOutputStream? = null
-
-    // Handling raw data
-    var SAMPLING_RATE = 52 // in Hz
-    var FILE_NAME = "current_session.csv"
+    private var samplingRate = 25 // Handling raw data in file - in Hz
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +69,7 @@ class TrainingActivity : AppCompatActivity() {
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
+        textViewPunchResult = findViewById(R.id.view_punch_result)
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -98,7 +97,6 @@ class TrainingActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
-
 
         /*
          * All ble devices discoverable by searchForDevice, api logging enabled
@@ -228,8 +226,27 @@ class TrainingActivity : AppCompatActivity() {
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
 
-                val punchAnalyzer = PunchAnalyzer(SAMPLING_RATE)
-                readDataFile(FILE_NAME, punchAnalyzer)
+                // Punch analyzing
+                val punchAnalyzer = PunchAnalyzer(samplingRate)
+
+                punchAnalyzer.isPunch = false
+                punchAnalyzer.isCorrectPunch = false
+                punchAnalyzer.mySpeed = 0F
+
+                readDataFile(fname, punchAnalyzer)
+
+                if (!punchAnalyzer.isPunch) {
+                    textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
+                } else {
+                    if (!punchAnalyzer.isCorrectPunch) {
+                        textViewPunchResult.text = "Your punch is not correct"
+                    } else {
+                        textViewPunchResult.text = "The speed of punch is: ${punchAnalyzer.mySpeed}"
+                    }
+                }
+
+                // Delete current_session.csv (we will move it inside roundButton in the future if need)
+                // deleteFile(fname)
             }
         }
 

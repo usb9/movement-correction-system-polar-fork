@@ -87,6 +87,20 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:text="100%" />
 
+    <TextView
+        android:id="@+id/view_punch_result"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="292dp"
+        android:textAlignment="center"
+        android:textColor="#C00000"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="correct punch?" />
+
     <Button
         android:id="@+id/movement_button"
         android:layout_width="0dp"
