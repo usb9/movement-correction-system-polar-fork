@@ -11,4 +11,13 @@
     <color name="primaryDarkColor">#AE1BB3</color>
     <color name="customer1">#55A4CB</color>
     <color name="customer2">#E5FF7C</color>
+
+    <color name="luminous_green_ground">#C3FF45</color>
+    <color name="black_ground">#3B3B32</color>
+    <color name="green_ground">#C3FF45</color>
+
+    <color name="black_font">#3B3B32</color>
+    <color name="green_font">#E5FF7C</color>
+
+    <color name="gray_button_ground">#888B6D</color>
 </resources>
