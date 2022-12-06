@@ -6,98 +6,78 @@
     android:layout_height="match_parent"
     tools:context=".TrainingActivity">
 
-    <LinearLayout
-        android:id="@+id/buttons_container"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/view_X_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/view_X_container">
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/view_X_container"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-    </LinearLayout>
-
     <TextView
-        android:id="@+id/view_punch_result"
+        android:id="@+id/training_nav_bar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/green_ground"
+        android:drawableLeft="@drawable/ic_baseline_arrow_back_24"
+        android:text="TRAINING"
+        android:textAlignment="center"
+        android:textSize="26sp"
+        android:textColor="@color/black_font"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:paddingLeft="10dp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/connect_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="21dp"
-        android:textAlignment="center"
-        android:textColor="#C00000"
-        android:textSize="30sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:text="@string/connect_to_device"
+        app:layout_constraintTop_toBottomOf="@id/training_nav_bar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/view_acc_X"
-        tools:text="correct punch?" />
+        app:layout_constraintEnd_toStartOf="@id/view_battery"
+        app:layout_constraintHorizontal_weight="4"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="10dp"
+        app:cornerRadius="20dp" />
 
     <TextView
         android:id="@+id/view_battery"
-        android:layout_width="116dp"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="32dp"
         android:textAlignment="center"
         android:textColor="#C00000"
         android:textSize="30sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@id/connect_button"
+        app:layout_constraintStart_toEndOf="@id/connect_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/connect_button"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.143"
+        app:layout_constraintHorizontal_weight="1"
+        android:layout_marginHorizontal="10dp"
         tools:text="100%" />
 
     <Button
         android:id="@+id/movement_button"
-        android:layout_width="356dp"
+        android:layout_width="match_parent"
         android:layout_height="47dp"
-        android:layout_marginTop="32dp"
         android:text="@string/start_movement_stream"
-        app:cornerRadius="20dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.492"
+        app:layout_constraintTop_toBottomOf="@id/connect_button"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/connect_button" />
+        android:layout_marginHorizontal="10dp"
+        app:cornerRadius="20dp" />
 
     <TextView
         android:id="@+id/view_acc_X"
-        android:layout_width="0dp"
+        android:layout_width="411dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="27dp"
         android:textAlignment="center"
         android:textColor="#C00000"
         android:textSize="30sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/movement_button"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/movement_button"
         tools:text="100" />
 
-    <Button
-        android:id="@+id/connect_button"
-        android:layout_width="221dp"
-        android:layout_height="49dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="12dp"
-        android:text="@string/connect_to_device"
-        app:cornerRadius="20dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/view_battery"
-        app:layout_constraintHorizontal_bias="0.178"
+    <TextView
+        android:id="@+id/view_punch_result"
+        android:layout_width="411dp"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="#C00000"
+        android:textSize="30sp"
+        app:layout_constraintTop_toBottomOf="@id/view_acc_X"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.146" />
+        tools:text="correct punch?" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

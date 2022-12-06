@@ -157,7 +157,7 @@ class TrainingActivity : AppCompatActivity() {
             // update battery textView
             override fun batteryLevelReceived(identifier: String, level: Int) {
                 Log.d(TAG, "Battery level $identifier $level%")
-                val batteryLevelText = "$level% battery"
+                val batteryLevelText = "$level%"
                 textViewBattery.append(batteryLevelText)
             }
 
