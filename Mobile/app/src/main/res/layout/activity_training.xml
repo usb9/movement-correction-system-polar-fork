@@ -31,22 +31,35 @@
         app:layout_constraintEnd_toStartOf="@id/view_battery"
         app:layout_constraintHorizontal_weight="4"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="20dp"
         app:cornerRadius="20dp" />
 
     <TextView
         android:id="@+id/view_battery"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAlignment="center"
         android:textColor="#C00000"
-        android:textSize="30sp"
+        android:textSize="16dp"
+        android:textStyle="bold"
+        android:layout_marginTop="14dp"
+        android:paddingLeft="20dp"
         app:layout_constraintTop_toTopOf="@id/connect_button"
         app:layout_constraintStart_toEndOf="@id/connect_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
         android:layout_marginHorizontal="10dp"
         tools:text="100%" />
+
+    <ImageView
+        android:id="@+id/ic_battery_level"
+        android:layout_width="68dp"
+        android:layout_height="68dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginStart="28dp"
+        android:src="@drawable/ic_battery_level"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintStart_toEndOf="@id/connect_button"
+        app:layout_constraintBottom_toTopOf="@id/movement_button" />
 
     <Button
         android:id="@+id/movement_button"
@@ -56,6 +69,7 @@
         app:layout_constraintTop_toBottomOf="@id/connect_button"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="20dp"
         app:cornerRadius="20dp" />
 
     <TextView
