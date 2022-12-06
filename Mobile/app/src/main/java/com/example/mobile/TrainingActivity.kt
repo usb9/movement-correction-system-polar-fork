@@ -1,11 +1,13 @@
 package com.example.mobile
 
 import android.Manifest
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Pair
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -52,6 +54,7 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+    private lateinit var imageViewBatteryLevel: ImageView
     private lateinit var textViewPunchResult: TextView
 
     // Session File
@@ -69,6 +72,7 @@ class TrainingActivity : AppCompatActivity() {
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
+        imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
         textViewPunchResult = findViewById(R.id.view_punch_result)
 
         // file, outputstream for acc data storage
@@ -158,7 +162,21 @@ class TrainingActivity : AppCompatActivity() {
             override fun batteryLevelReceived(identifier: String, level: Int) {
                 Log.d(TAG, "Battery level $identifier $level%")
                 val batteryLevelText = "$level%"
-                textViewBattery.append(batteryLevelText)
+
+                imageViewBatteryLevel.visibility = ImageView.VISIBLE
+                textViewBattery.visibility = TextView.VISIBLE
+
+                textViewBattery.text = batteryLevelText
+                if (level > 60) {
+                    textViewBattery.setTextColor(Color.GREEN)
+                    imageViewBatteryLevel.setColorFilter(Color.GREEN)
+                } else if (level > 30) {
+                    textViewBattery.setTextColor(Color.YELLOW)
+                    imageViewBatteryLevel.setColorFilter(Color.YELLOW)
+                } else {
+                    textViewBattery.setTextColor(Color.RED)
+                    imageViewBatteryLevel.setColorFilter(Color.RED)
+                }
             }
 
             // works only with oh10 anyways
@@ -177,6 +195,9 @@ class TrainingActivity : AppCompatActivity() {
             try {
                 if (deviceConnected) {
                     api.disconnectFromDevice(deviceId)
+
+                    imageViewBatteryLevel.visibility = ImageView.INVISIBLE
+                    textViewBattery.visibility = TextView.INVISIBLE
                 } else {
                     api.connectToDevice(deviceId)
                 }

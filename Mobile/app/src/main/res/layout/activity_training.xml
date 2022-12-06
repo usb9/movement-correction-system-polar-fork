@@ -52,6 +52,7 @@
 
     <ImageView
         android:id="@+id/ic_battery_level"
+        android:visibility="invisible"
         android:layout_width="68dp"
         android:layout_height="68dp"
         android:layout_marginHorizontal="10dp"
