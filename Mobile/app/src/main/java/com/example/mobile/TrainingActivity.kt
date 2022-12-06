@@ -171,7 +171,7 @@ class TrainingActivity : AppCompatActivity() {
 
                 textViewBattery.text = batteryLevelText
                 if (level == 100) {
-                    textViewBattery.setPadding(20,0,0,0)
+                    textViewBattery.setPadding(14,0,0,0)
                 } else if (level > 60) {
                     textViewBattery.setTextColor(Color.GREEN)
                     imageViewBatteryLevel.setColorFilter(Color.GREEN)
@@ -182,7 +182,7 @@ class TrainingActivity : AppCompatActivity() {
                     textViewBattery.setTextColor(Color.RED)
                     imageViewBatteryLevel.setColorFilter(Color.RED)
                 } else {
-                    textViewBattery.setPadding(28,0,0,0)
+                    textViewBattery.setPadding(22,0,0,0)
                 }
             }
 
