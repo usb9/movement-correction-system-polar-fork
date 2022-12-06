@@ -1,6 +1,7 @@
 package com.example.mobile
 
 import android.Manifest
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -56,6 +57,7 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewBattery: TextView
     private lateinit var imageViewBatteryLevel: ImageView
     private lateinit var textViewPunchResult: TextView
+    private lateinit var backNavigation: TextView
 
     // Session File
     private val fname: String = "current_session.csv"
@@ -74,6 +76,7 @@ class TrainingActivity : AppCompatActivity() {
         textViewBattery = findViewById(R.id.view_battery)
         imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
         textViewPunchResult = findViewById(R.id.view_punch_result)
+        backNavigation = findViewById(R.id.training_nav_bar)
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -167,15 +170,19 @@ class TrainingActivity : AppCompatActivity() {
                 textViewBattery.visibility = TextView.VISIBLE
 
                 textViewBattery.text = batteryLevelText
-                if (level > 60) {
+                if (level == 100) {
+                    textViewBattery.setPadding(20,0,0,0)
+                } else if (level > 60) {
                     textViewBattery.setTextColor(Color.GREEN)
                     imageViewBatteryLevel.setColorFilter(Color.GREEN)
                 } else if (level > 30) {
                     textViewBattery.setTextColor(Color.YELLOW)
                     imageViewBatteryLevel.setColorFilter(Color.YELLOW)
-                } else {
+                } else if (level >= 10) {
                     textViewBattery.setTextColor(Color.RED)
                     imageViewBatteryLevel.setColorFilter(Color.RED)
+                } else {
+                    textViewBattery.setPadding(28,0,0,0)
                 }
             }
 
@@ -281,6 +288,14 @@ class TrainingActivity : AppCompatActivity() {
         } else {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
+
+        // navigation
+        backNavigation.setOnClickListener {
+            val homePage = Intent(this, HomeActivity::class.java)
+            startActivity(homePage)
+            finish()
+        }
+
     }   // onCreate end
 
     /*
