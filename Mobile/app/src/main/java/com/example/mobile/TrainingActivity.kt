@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.view.isVisible
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
@@ -53,6 +54,7 @@ class TrainingActivity : AppCompatActivity() {
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
+    private lateinit var endTrainingButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
     private lateinit var imageViewBatteryLevel: ImageView
@@ -73,6 +75,7 @@ class TrainingActivity : AppCompatActivity() {
 
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
+        endTrainingButton = findViewById(R.id.end_training_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
         imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
@@ -105,6 +108,39 @@ class TrainingActivity : AppCompatActivity() {
             }
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+        }
+
+
+        /*
+         * decide whether endTrainingButton is visible or invisible
+         */
+        var noNeedAccount: Boolean = false
+
+        try {
+            var fin: FileInputStream? = null
+            fin = openFileInput("DoINeedAccount.txt")
+            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+
+            val stringBuilder: StringBuilder = StringBuilder()
+            var text: String? = null
+            while (run {
+                    text = bufferedReader.readLine()
+                    text
+                } != null) {
+                stringBuilder.append(text)
+                text?.let {
+                    noNeedAccount = it.contains("no")
+                }
+            }
+        } catch (ex: Exception) {
+            if (ex.message?.contains("No such file or directory") == true) {
+                noNeedAccount = false
+            }
+        }
+
+        if (noNeedAccount) {
+            endTrainingButton.visibility = Button.INVISIBLE
         }
 
         /*
@@ -278,7 +314,7 @@ class TrainingActivity : AppCompatActivity() {
                         textViewPunchResult.setTextColor(Color.RED)
                     } else {
                         textViewPunchResult.text = "My punch is: correct"
-                        textViewPunchResult.setTextColor(Color.GREEN)
+                        textViewPunchResult.setTextColor(resources.getColor(R.color.green_font))
 
                         textViewSpeed.visibility = TextView.VISIBLE
                         textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
@@ -288,6 +324,12 @@ class TrainingActivity : AppCompatActivity() {
                 // Delete current_session.csv (we will move it inside roundButton in the future if need)
                 // deleteFile(fname)
             }
+        }
+
+        // end training button
+        endTrainingButton.setOnClickListener {
+            val nextPage = Intent(this, StatisticActivity::class.java)
+            startActivity(nextPage)
         }
 
         // permissions
