@@ -68,6 +68,11 @@ class TrainingActivity : AppCompatActivity() {
     private var fos: FileOutputStream? = null
     private var samplingRate = 25 // Handling raw data in file - in Hz
 
+    // Latency
+    private val timeResponse = 7000
+    private lateinit var textViewCountdown1: TextView
+    private lateinit var textViewCountdown2: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
@@ -82,6 +87,8 @@ class TrainingActivity : AppCompatActivity() {
         textViewPunchResult = findViewById(R.id.view_punch_result)
         textViewSpeed = findViewById(R.id.view_speed)
         backNavigation = findViewById(R.id.training_nav_bar)
+        textViewCountdown1 = findViewById(R.id.view_countdown_1)
+        textViewCountdown2 = findViewById(R.id.view_countdown_2)
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -268,28 +275,34 @@ class TrainingActivity : AppCompatActivity() {
                 textViewSpeed.visibility = TextView.INVISIBLE
 
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
-                movementDisposable = requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
-                    .flatMap { settings: PolarSensorSetting ->
-                        api.startAccStreaming(deviceId, settings)
-                    }
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                        { polarAccelerometerData: PolarAccelerometerData ->
-                            for (data in polarAccelerometerData.samples) {
-                                Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
-                                textViewAccX.text = "X: ${data.x.toString()}"
-                                fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+
+                showCountdown(textViewCountdown1, textViewCountdown2)
+
+                Thread {
+                    movementDisposable =
+                        requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
+                            .flatMap { settings: PolarSensorSetting ->
+                                api.startAccStreaming(deviceId, settings)
                             }
-                        },
-                        { error: Throwable ->
-                            toggleButtonUp(movementButton, R.string.start_movement_stream)
-                            Log.e(TAG, "ACC stream failed. Reason $error")
-                        },
-                        {
-                            showToast("ACC stream complete")
-                            Log.d(TAG, "ACC stream complete")
-                        }
-                    )
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(
+                                { polarAccelerometerData: PolarAccelerometerData ->
+                                    for (data in polarAccelerometerData.samples) {
+                                        Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
+                                        textViewAccX.text = "X: ${data.x.toString()}"
+                                        fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                    }
+                                },
+                                { error: Throwable ->
+                                    toggleButtonUp(movementButton, R.string.start_movement_stream)
+                                    Log.e(TAG, "ACC stream failed. Reason $error")
+                                },
+                                {
+                                    showToast("ACC stream complete")
+                                    Log.d(TAG, "ACC stream complete")
+                                }
+                            )
+                }.start()
             } else {
                 toggleButtonUp(movementButton, R.string.start_movement_stream)
                 // NOTE dispose will stop streaming if it is "running"
@@ -465,6 +478,25 @@ class TrainingActivity : AppCompatActivity() {
             DrawableCompat.setTint(buttonDrawable, resources.getColor(R.color.primaryColor))
         }
         button.background = buttonDrawable
+    }
+
+    private fun showCountdown(view1: TextView, view2: TextView){
+        Thread {
+//            view1.visibility = TextView.VISIBLE
+//            view2.visibility = TextView.VISIBLE
+
+            val timeResponseSecs = timeResponse/1000
+
+            for (i in 0..timeResponseSecs) {
+                runOnUiThread {
+                    view2.text = (timeResponseSecs - i).toString()
+                }
+                Thread.sleep(1000)
+            }
+
+//            view1.visibility = TextView.INVISIBLE
+//            view2.visibility = TextView.INVISIBLE
+        }.start()
     }
 
     private fun showToast(message: String) {
