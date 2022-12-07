@@ -41,7 +41,7 @@
         android:layout_marginHorizontal="10dp"
         android:layout_marginTop="13dp"
         android:paddingLeft="18dp"
-        android:textColor="#C00000"
+        android:textColor="#A4C639"
         android:textSize="16dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -58,41 +58,85 @@
         android:layout_marginHorizontal="10dp"
         android:layout_marginStart="22dp"
         android:src="@drawable/ic_battery_level"
-        android:layout_marginBottom="10dp"
+        android:layout_marginBottom="70dp"
         app:layout_constraintStart_toEndOf="@id/connect_button"
         app:layout_constraintBottom_toTopOf="@id/movement_button" />
+
+    <TextView
+        android:id="@+id/view_round"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="@color/green_font"
+        android:textSize="26dp"
+        android:textStyle="bold"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toBottomOf="@id/connect_button"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="(Round Time)" />
 
     <Button
         android:id="@+id/movement_button"
         android:layout_width="match_parent"
-        android:layout_height="47dp"
-        android:text="@string/start_movement_stream"
-        app:layout_constraintTop_toBottomOf="@id/connect_button"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_height="48dp"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="20dp"
-        app:cornerRadius="20dp" />
+        android:layout_marginTop="80dp"
+        android:text="@string/start_movement_stream"
+        app:cornerRadius="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/connect_button" />
 
     <TextView
         android:id="@+id/view_acc_X"
-        android:layout_width="411dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAlignment="center"
         android:textColor="#C00000"
         android:textSize="30sp"
-        app:layout_constraintTop_toBottomOf="@id/movement_button"
+        android:layout_marginBottom="100dp"
+        app:layout_constraintBottom_toTopOf="@id/end_training_button"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         tools:text="100" />
 
     <TextView
         android:id="@+id/view_punch_result"
-        android:layout_width="411dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAlignment="center"
-        android:textColor="#C00000"
+        android:textColor="@color/green_font"
         android:textSize="30sp"
-        app:layout_constraintTop_toBottomOf="@id/view_acc_X"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/movement_button"
         app:layout_constraintStart_toStartOf="parent"
-        tools:text="correct punch?" />
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="@string/punch_result" />
+
+    <TextView
+        android:id="@+id/view_speed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="@color/green_font"
+        android:textSize="30sp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/view_punch_result"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="@string/speed" />
+
+    <Button
+        android:id="@+id/end_training_button"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginBottom="30dp"
+        android:text="@string/end_training"
+        app:cornerRadius="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

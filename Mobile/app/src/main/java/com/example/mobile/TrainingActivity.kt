@@ -57,6 +57,7 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewBattery: TextView
     private lateinit var imageViewBatteryLevel: ImageView
     private lateinit var textViewPunchResult: TextView
+    private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
 
     // Session File
@@ -76,6 +77,7 @@ class TrainingActivity : AppCompatActivity() {
         textViewBattery = findViewById(R.id.view_battery)
         imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
         textViewPunchResult = findViewById(R.id.view_punch_result)
+        textViewSpeed = findViewById(R.id.view_speed)
         backNavigation = findViewById(R.id.training_nav_bar)
 
         // file, outputstream for acc data storage
@@ -226,6 +228,9 @@ class TrainingActivity : AppCompatActivity() {
         movementButton.setOnClickListener {
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
+                textViewPunchResult.visibility = TextView.INVISIBLE
+                textViewSpeed.visibility = TextView.INVISIBLE
+
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
                 movementDisposable = requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
                     .flatMap { settings: PolarSensorSetting ->
@@ -263,13 +268,20 @@ class TrainingActivity : AppCompatActivity() {
 
                 readDataFile(fname, punchAnalyzer)
 
+                textViewPunchResult.visibility = TextView.VISIBLE
                 if (!punchAnalyzer.isPunch) {
                     textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
+                    textViewPunchResult.setTextColor(Color.RED)
                 } else {
                     if (!punchAnalyzer.isCorrectPunch) {
-                        textViewPunchResult.text = "Your punch is not correct"
+                        textViewPunchResult.text = "My punch is: incorrect"
+                        textViewPunchResult.setTextColor(Color.RED)
                     } else {
-                        textViewPunchResult.text = "The speed of punch is: ${punchAnalyzer.mySpeed}"
+                        textViewPunchResult.text = "My punch is: correct"
+                        textViewPunchResult.setTextColor(Color.GREEN)
+
+                        textViewSpeed.visibility = TextView.VISIBLE
+                        textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
                     }
                 }
 
