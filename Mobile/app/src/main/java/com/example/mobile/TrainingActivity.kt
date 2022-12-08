@@ -1,11 +1,14 @@
 package com.example.mobile
 
 import android.Manifest
+import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Pair
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -50,9 +53,13 @@ class TrainingActivity : AppCompatActivity() {
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
+    private lateinit var endTrainingButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+    private lateinit var imageViewBatteryLevel: ImageView
     private lateinit var textViewPunchResult: TextView
+    private lateinit var textViewSpeed: TextView
+    private lateinit var backNavigation: TextView
 
     // Session File
     private val fname: String = "current_session.csv"
@@ -62,6 +69,11 @@ class TrainingActivity : AppCompatActivity() {
     private var range = 8;
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
 
+    // Latency
+    private val timeResponse = 7000
+    private lateinit var textViewCountdown1: TextView
+    private lateinit var textViewCountdown2: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
@@ -69,9 +81,15 @@ class TrainingActivity : AppCompatActivity() {
 
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
+        endTrainingButton = findViewById(R.id.end_training_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
+        imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
         textViewPunchResult = findViewById(R.id.view_punch_result)
+        textViewSpeed = findViewById(R.id.view_speed)
+        backNavigation = findViewById(R.id.training_nav_bar)
+        textViewCountdown1 = findViewById(R.id.view_countdown_1)
+        textViewCountdown2 = findViewById(R.id.view_countdown_2)
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -98,6 +116,39 @@ class TrainingActivity : AppCompatActivity() {
             }
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+        }
+
+
+        /*
+         * decide whether endTrainingButton is visible or invisible
+         */
+        var noNeedAccount: Boolean = false
+
+        try {
+            var fin: FileInputStream? = null
+            fin = openFileInput("DoINeedAccount.txt")
+            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+
+            val stringBuilder: StringBuilder = StringBuilder()
+            var text: String? = null
+            while (run {
+                    text = bufferedReader.readLine()
+                    text
+                } != null) {
+                stringBuilder.append(text)
+                text?.let {
+                    noNeedAccount = it.contains("no")
+                }
+            }
+        } catch (ex: Exception) {
+            if (ex.message?.contains("No such file or directory") == true) {
+                noNeedAccount = false
+            }
+        }
+
+        if (noNeedAccount) {
+            endTrainingButton.visibility = Button.INVISIBLE
         }
 
         /*
@@ -159,8 +210,26 @@ class TrainingActivity : AppCompatActivity() {
             // update battery textView
             override fun batteryLevelReceived(identifier: String, level: Int) {
                 Log.d(TAG, "Battery level $identifier $level%")
-                val batteryLevelText = "$level% battery"
-                textViewBattery.append(batteryLevelText)
+                val batteryLevelText = "$level%"
+
+                imageViewBatteryLevel.visibility = ImageView.VISIBLE
+                textViewBattery.visibility = TextView.VISIBLE
+
+                textViewBattery.text = batteryLevelText
+                if (level == 100) {
+                    textViewBattery.setPadding(14,0,0,0)
+                } else if (level > 60) {
+                    textViewBattery.setTextColor(Color.GREEN)
+                    imageViewBatteryLevel.setColorFilter(Color.GREEN)
+                } else if (level > 30) {
+                    textViewBattery.setTextColor(Color.YELLOW)
+                    imageViewBatteryLevel.setColorFilter(Color.YELLOW)
+                } else if (level >= 10) {
+                    textViewBattery.setTextColor(Color.RED)
+                    imageViewBatteryLevel.setColorFilter(Color.RED)
+                } else {
+                    textViewBattery.setPadding(22,0,0,0)
+                }
             }
 
             // works only with oh10 anyways
@@ -179,6 +248,9 @@ class TrainingActivity : AppCompatActivity() {
             try {
                 if (deviceConnected) {
                     api.disconnectFromDevice(deviceId)
+
+                    imageViewBatteryLevel.visibility = ImageView.INVISIBLE
+                    textViewBattery.visibility = TextView.INVISIBLE
                 } else {
                     api.connectToDevice(deviceId)
                 }
@@ -200,29 +272,38 @@ class TrainingActivity : AppCompatActivity() {
         movementButton.setOnClickListener {
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
+                textViewPunchResult.visibility = TextView.INVISIBLE
+                textViewSpeed.visibility = TextView.INVISIBLE
+
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
-                movementDisposable = requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
-                    .flatMap { settings: PolarSensorSetting ->
-                        api.startAccStreaming(deviceId, settings)
-                    }
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                        { polarAccelerometerData: PolarAccelerometerData ->
-                            for (data in polarAccelerometerData.samples) {
-                                Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
-                                textViewAccX.text = "X: ${data.x.toString()}"
-                                fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+
+                showCountdown(textViewCountdown1, textViewCountdown2)
+
+                Thread {
+                    movementDisposable =
+                        requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
+                            .flatMap { settings: PolarSensorSetting ->
+                                api.startAccStreaming(deviceId, settings)
                             }
-                        },
-                        { error: Throwable ->
-                            toggleButtonUp(movementButton, R.string.start_movement_stream)
-                            Log.e(TAG, "ACC stream failed. Reason $error")
-                        },
-                        {
-                            showToast("ACC stream complete")
-                            Log.d(TAG, "ACC stream complete")
-                        }
-                    )
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(
+                                { polarAccelerometerData: PolarAccelerometerData ->
+                                    for (data in polarAccelerometerData.samples) {
+                                        Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
+                                        textViewAccX.text = "X: ${data.x.toString()}"
+                                        fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                    }
+                                },
+                                { error: Throwable ->
+                                    toggleButtonUp(movementButton, R.string.start_movement_stream)
+                                    Log.e(TAG, "ACC stream failed. Reason $error")
+                                },
+                                {
+                                    showToast("ACC stream complete")
+                                    Log.d(TAG, "ACC stream complete")
+                                }
+                            )
+                }.start()
             } else {
                 toggleButtonUp(movementButton, R.string.start_movement_stream)
                 // NOTE dispose will stop streaming if it is "running"
@@ -234,19 +315,32 @@ class TrainingActivity : AppCompatActivity() {
 
                 readDataFile(fname, punchAnalyzer)
 
+                textViewPunchResult.visibility = TextView.VISIBLE
                 if (!punchAnalyzer.isPunch) {
                     textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
+                    textViewPunchResult.setTextColor(Color.RED)
                 } else {
                     if (!punchAnalyzer.isCorrectPunch) {
-                        textViewPunchResult.text = "Your punch is not correct"
+                        textViewPunchResult.text = "My punch is: incorrect"
+                        textViewPunchResult.setTextColor(Color.RED)
                     } else {
-                        textViewPunchResult.text = "The speed of punch is: ${punchAnalyzer.mySpeed}"
+                        textViewPunchResult.text = "My punch is: correct"
+                        textViewPunchResult.setTextColor(resources.getColor(R.color.green_font))
+
+                        textViewSpeed.visibility = TextView.VISIBLE
+                        textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
                     }
                 }*/
 
                 // Delete current_session.csv (we will move it inside roundButton in the future if need)
                 // deleteFile(fname)
             }
+        }
+
+        // end training button
+        endTrainingButton.setOnClickListener {
+            val nextPage = Intent(this, StatisticActivity::class.java)
+            startActivity(nextPage)
         }
 
         // permissions
@@ -259,6 +353,14 @@ class TrainingActivity : AppCompatActivity() {
         } else {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
+
+        // navigation
+        backNavigation.setOnClickListener {
+            val homePage = Intent(this, HomeActivity::class.java)
+            startActivity(homePage)
+            finish()
+        }
+
     }   // onCreate end
 
     /*
@@ -386,6 +488,28 @@ class TrainingActivity : AppCompatActivity() {
             DrawableCompat.setTint(buttonDrawable, resources.getColor(R.color.primaryColor))
         }
         button.background = buttonDrawable
+    }
+
+    private fun showCountdown(view1: TextView, view2: TextView){
+        Thread {
+            val timeResponseSecs = timeResponse/1000
+
+            for (i in 0..timeResponseSecs) {
+                runOnUiThread {
+                    if (i != 7) {
+                        view1.visibility = TextView.VISIBLE
+                        view2.visibility = TextView.VISIBLE
+
+                        view1.text = "Training starts in"
+                        view2.text = (timeResponseSecs - i).toString()
+                    } else {
+                        view1.visibility = TextView.INVISIBLE
+                        view2.visibility = TextView.INVISIBLE
+                    }
+                }
+                Thread.sleep(1000)
+            }
+        }.start()
     }
 
     private fun showToast(message: String) {
