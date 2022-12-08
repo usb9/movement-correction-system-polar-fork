@@ -58,9 +58,9 @@
         android:layout_marginHorizontal="10dp"
         android:layout_marginStart="22dp"
         android:src="@drawable/ic_battery_level"
-        android:layout_marginBottom="70dp"
+        android:layout_marginTop="10dp"
         app:layout_constraintStart_toEndOf="@id/connect_button"
-        app:layout_constraintBottom_toTopOf="@id/movement_button" />
+        app:layout_constraintTop_toBottomOf="@id/training_nav_bar" />
 
     <TextView
         android:id="@+id/view_round"
