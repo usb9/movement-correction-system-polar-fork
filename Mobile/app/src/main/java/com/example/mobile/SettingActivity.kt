@@ -1,6 +1,7 @@
 package com.example.mobile
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -38,8 +39,9 @@ class SettingActivity : AppCompatActivity() {
     private var bluetoothEnabled = false
 
     private lateinit var scanButton: Button
+    private lateinit var backNavigation: TextView
 
-    // ATTENTION! Replace with the device ID from your device at index 1st of array below.
+    // ATTENTION! list devices ID of Polar at index 1st to n
     private val listDeviceId = mutableListOf<String>("select one device")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,10 +50,12 @@ class SettingActivity : AppCompatActivity() {
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
 
         scanButton = findViewById(R.id.scan_button)
+        backNavigation = findViewById(R.id.setting_nav_bar)
 
         api.setPolarFilter(false)
         api.setApiLogger { s: String -> Log.d(API_LOGGER_TAG, s) }
         api.setApiCallback(object : PolarBleApiCallback() {
+            // disable buttons when phone bluetooth off
             override fun blePowerStateChanged(powered: Boolean) {
                 Log.d(TAG, "BLE power: $powered")
                 bluetoothEnabled = powered
@@ -64,10 +68,12 @@ class SettingActivity : AppCompatActivity() {
                 }
             }
 
+            // only logging
             override fun deviceConnecting(polarDeviceInfo: PolarDeviceInfo) {
                 Log.d(TAG, "CONNECTING: " + polarDeviceInfo.deviceId)
             }
 
+            // only logging
             override fun streamingFeaturesReady(
                 identifier: String, features: Set<PolarBleApi.DeviceStreamingFeature>
             ) {
@@ -76,19 +82,25 @@ class SettingActivity : AppCompatActivity() {
                 }
             }
 
+            // UUID logging
             override fun disInformationReceived(identifier: String, uuid: UUID, value: String) {
                 Log.d(TAG, "uuid: $uuid value: $value")
             }
 
+            /*
             override fun batteryLevelReceived(identifier: String, level: Int) {
                 Log.d(TAG, "BATTERY LEVEL: $level")
             }
+            */
 
             override fun polarFtpFeatureReady(s: String) {
                 Log.d(TAG, "FTP ready")
             }
         })
 
+        /*
+         * spinner: display all devices of Polar that the mobile have just scan
+         */
         val spinner: Spinner = findViewById(R.id.spinner)
         val adapter = ArrayAdapter(
             this,
@@ -116,6 +128,9 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
+        /*
+         * Scan button: find all devices of Polar
+         */
         scanButton.setOnClickListener {
             val isDisposed = scanDisposable?.isDisposed ?: true
             if (isDisposed) {
@@ -155,7 +170,16 @@ class SettingActivity : AppCompatActivity() {
         } else {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
-    }
+
+        /*
+         * back button: navigation home screen
+         */
+        backNavigation.setOnClickListener {
+            val homePage = Intent(this, HomeActivity::class.java)
+            startActivity(homePage)
+            finish()
+        }
+    }   // onCreate end
 
     public override fun onPause() {
         super.onPause()
