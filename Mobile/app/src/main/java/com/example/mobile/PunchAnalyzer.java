@@ -11,13 +11,15 @@ package com.example.mobile;
  */
 
 import android.util.Log;
+import android.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class PunchAnalyzer {
-    private int SAMPLING_RATE;
-    private int FRAME_LENGTH_IN_MS;
+    private int sampleRate;
+    private int range;
+    private int frameLengthInMs;
     public static final double MPS_TO_KMH = 3.6;   // m/s -> km/h
 
     // Punch result
@@ -31,21 +33,22 @@ public class PunchAnalyzer {
 
     // for punch identification, a specified number of frames has to be ignored
     // (exact number depends on the sampling rate, see constructor)
-    private int PUNCH_BLOCKED_FRAMES;
-    private int MISTAKE_BLOCKED_FRAMES;
+    private int punchBlockedFrames;
+    private int mistakeBlockedFrames;
 
+    private Double punchSpeed = null;
     // used for counting ignored frames / frames for mistake identification
     private int ignoreCount = 0;
     private boolean ignoreFrames = false;
     private int identificationCount = 0;
 
     // x value thresholds for registering punches and arm drops
-    private double X_PUNCH_THRESHOLD = 75.0;
-    private double X_MISTAKE_THRESHOLD = -20.0;
+    private final double X_PUNCH_THRESHOLD = 75.0;
+    private final double X_MISTAKE_THRESHOLD = -20.0;
 
     private boolean isRangeSupported;
 
-    private static double MILLI_G_TO_METER_PER_SQUARE_SECOND = 9.81 / 1000.0;
+    private final static double MILLI_G_TO_METER_PER_SQUARE_SECOND = 9.81 / 1000.0;
     private int BUFFER_SIZE;
     private static final double BUFFER_SIZE_RATIO = 0.8;
     private static final String TAG = "PUNCH_ANALYZER";
@@ -61,11 +64,11 @@ public class PunchAnalyzer {
         }
 
 
-        SAMPLING_RATE = samplingRate;
-        FRAME_LENGTH_IN_MS = 1000 / SAMPLING_RATE;
+        sampleRate = samplingRate;
+        frameLengthInMs = 1000 / sampleRate;
         BUFFER_SIZE = (int)(samplingRate / BUFFER_SIZE_RATIO);
-        PUNCH_BLOCKED_FRAMES = samplingRate / 5;
-        MISTAKE_BLOCKED_FRAMES = 2 * PUNCH_BLOCKED_FRAMES;
+        punchBlockedFrames = samplingRate / 5;
+        mistakeBlockedFrames = 2 * punchBlockedFrames;
 
         for(int i = 0; i < BUFFER_SIZE; ++i) {       // buffer size should always stay the same afterwards!
             xValueBuffer.add((float) i + 1);   // adding data!
@@ -73,8 +76,16 @@ public class PunchAnalyzer {
         }
     }
 
+    public void setSampleRate(int SampleRate) {
+        sampleRate = SampleRate;
+        Log.d(TAG, "Sample rate set to " + sampleRate);
+    }
+    public void setRange(int Range) {
+        range = Range;
+        Log.d(TAG, "Range set to " + range);
+    }
 
-    public void nextFrame(float punchDirection, float wristRotationDirection, float verticalDirection) throws Exception{
+    public Pair<Double, Boolean> nextFrame(float punchDirection, float wristRotationDirection, float verticalDirection) throws Exception{
 
         if(!isRangeSupported) {
             Exception e = new Exception("Sensor g range too low!");
@@ -91,29 +102,32 @@ public class PunchAnalyzer {
         meanSquareRootBuffer.add(meanSquareRoot);
         meanSquareRootBuffer.remove(0);
 
-        analyzeX(punchDirection);
+        return analyzeX(punchDirection);
     }
 
     /*
      * Analyzes current data buffer for punches and mistakes, calls calculatePunchVelocity()
      * when a punch is recognized
+     * returns Pair containing Punch speed, true->correct punch / false->incorrect punch after a punch is recognized
+     * returns null when no punch is recognized or more frames are needed for full analysis
      */
-    private void analyzeX(float punchingDirection) {        // change to public for testing
+    private Pair<Double,Boolean> analyzeX(float punchingDirection) {        // change to public for testing
         /*
          * Punch recognition:
          * if x value is at least 75, a punch is registered and calculatePunchVelocity() is called
          * next 5 data frames are ignored to prevent registering
          * multiple punches
          */
+        Pair<Double, Boolean> result = null;
 
         if(punchingDirection >= X_PUNCH_THRESHOLD && !ignoreFrames) {
             System.out.println("punchingDirection over 75: Punch recognized");  // Punch recognised
 
             ignoreFrames = true;
-            ignoreCount = PUNCH_BLOCKED_FRAMES;
+            ignoreCount = punchBlockedFrames;
 
             try {
-            calculatePunchVelocity(xValueBuffer);
+                punchSpeed = calculatePunchVelocity(xValueBuffer);
             }
             catch (IllegalArgumentException e){
                 Log.d(TAG, e.toString());
@@ -130,7 +144,7 @@ public class PunchAnalyzer {
             --ignoreCount;
             if (ignoreCount <= 0) {
                 ignoreFrames = false;
-                identificationCount = MISTAKE_BLOCKED_FRAMES;       // starts correct/incorrect identification
+                identificationCount = mistakeBlockedFrames;       // starts correct/incorrect identification
             }
         }
 
@@ -138,22 +152,24 @@ public class PunchAnalyzer {
             --identificationCount;
 
             if (punchingDirection < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
-                System.out.println("correct Punch!");
                 identificationCount = 0;        // reset to prevent counting multiple times
+                result = new Pair<>(punchSpeed, true);
+                Log.d(TAG, "Correct, speed: " + result.first);
+
             } else if (identificationCount == 0) {
-                Log.d("Algorithm", "Incorrect Punch!");
-                isCorrectPunch = false;
+                result = new Pair<>(punchSpeed, false);
+                Log.d(TAG, "Incorrect, speed: " + result.first);
             }
         }
-
+        return result;
         // Log.d("My draft", "--------------------------------- analyzeX");
     }
 
     /*
-     * Calculates Punch velocity, currently prints result to console
+     * Calculates and returns Punch velocity
      */
 
-    private float calculatePunchVelocity(List<Float> xValueBuffer) throws IllegalArgumentException {
+    private Double calculatePunchVelocity(List<Float> xValueBuffer) throws IllegalArgumentException {
 
 
         int startIndex = findStartIndex(xValueBuffer);
@@ -165,28 +181,28 @@ public class PunchAnalyzer {
         if(startIndex == -1 || endIndex == -1) {
 
             System.out.println("Speed calculation: Index not found!");
-            return -1;
+            return null;
         }
 
         // ------ speed calculation     ------
 
-        float speedInMps = 0;
-        float speedMSR = 0;
+        double speedInMps = 0;
+        double speedMSR = 0;
         for (int i = startIndex; i < endIndex - 1; ++i) {
-            speedInMps += (FRAME_LENGTH_IN_MS * Math.abs(xValueBuffer.get(i)));
-            speedMSR += (FRAME_LENGTH_IN_MS * Math.abs(meanSquareRootBuffer.get(i)));
+            speedInMps += (frameLengthInMs * Math.abs(xValueBuffer.get(i)));
+            speedMSR += (frameLengthInMs * Math.abs(meanSquareRootBuffer.get(i)));
             if (i < endIndex - 2) {
-                speedInMps += ((FRAME_LENGTH_IN_MS * Math.abs(xValueBuffer.get(i)
+                speedInMps += ((frameLengthInMs * Math.abs(xValueBuffer.get(i)
                         - xValueBuffer.get(i + 1))) / 2.0);
-                speedMSR += ((FRAME_LENGTH_IN_MS * Math.abs(meanSquareRootBuffer.get(i)
+                speedMSR += ((frameLengthInMs * Math.abs(meanSquareRootBuffer.get(i)
                         - meanSquareRootBuffer.get(i + 1))) / 2.0);
             }
             else {
-                speedInMps += (((FRAME_LENGTH_IN_MS / 2.0) * Math.abs(xValueBuffer.get(i))) / 2.0);
-                speedMSR += (((FRAME_LENGTH_IN_MS / 2.0) * Math.abs(meanSquareRootBuffer.get(i))) / 2.0);
+                speedInMps += (((frameLengthInMs / 2.0) * Math.abs(xValueBuffer.get(i))) / 2.0);
+                speedMSR += (((frameLengthInMs / 2.0) * Math.abs(meanSquareRootBuffer.get(i))) / 2.0);
             }
-            speedInMps -= FRAME_LENGTH_IN_MS * 10.0;
-            speedMSR -= FRAME_LENGTH_IN_MS * 5.74;
+            speedInMps -= frameLengthInMs * 10.0;
+            speedMSR -= frameLengthInMs * 5.74;
         }
 
         speedInMps /= 1000; //framelength is in ms
@@ -197,13 +213,13 @@ public class PunchAnalyzer {
         Log.d("Algorithm", "Apprx. speed(MSR) in meters per second: " + speedMSR);
         Log.d("Algorithm", "Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
 
-        mySpeed = speedMSR;
+        //mySpeed = speedMSR;
         // ------ end speed calculation ------
         return speedMSR;
     }
 
     /*
-     * Finds the Element indicating that the punching movement begins
+     * Finds and returns the Element indicating that the punching movement begins
      */
     public int findStartIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
 
@@ -242,7 +258,7 @@ public class PunchAnalyzer {
     }
 
     /*
-     * Finds the Element indicating that the punch connects
+     * Finds and returns the Element indicating that the punch connects
      */
     public int findEndIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
         if(xValueBuffer.size() != BUFFER_SIZE) {

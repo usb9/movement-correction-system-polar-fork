@@ -58,7 +58,9 @@ class TrainingActivity : AppCompatActivity() {
     private val fname: String = "current_session.csv"
     private var file: File? = null
     private var fos: FileOutputStream? = null
-    private var samplingRate = 25 // Handling raw data in file - in Hz
+    private var sampleRate = 26 // Handling raw data in file - in Hz
+    private var range = 8;
+    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -227,11 +229,8 @@ class TrainingActivity : AppCompatActivity() {
                 movementDisposable?.dispose()
 
                 // Punch analyzing
-                val punchAnalyzer = PunchAnalyzer(samplingRate)
+                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
 
-                punchAnalyzer.isPunch = false
-                punchAnalyzer.isCorrectPunch = false
-                punchAnalyzer.mySpeed = 0F
 
                 readDataFile(fname, punchAnalyzer)
 
@@ -310,7 +309,19 @@ class TrainingActivity : AppCompatActivity() {
                 throw Throwable("Settings are not available")
             } else {
                 Log.d(TAG, "Feature " + feature + " available settings " + available.settings)
+
                 Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
+
+                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1)         // get current sample rate and range
+                    range = available.settings[PolarSensorSetting.SettingType.RANGE]?.first() ?: -1
+                    punchAnalyzer.setRange(range)                                                   // set in PunchAnalyzer
+
+                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1)
+                    sampleRate = available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first() ?: -1
+                    punchAnalyzer.setSampleRate(sampleRate)
+
+                Log.d(TAG, "Range =" + range + " Sample rate =" + sampleRate)
+
                 return@zip android.util.Pair(available, all)
             }
         }
