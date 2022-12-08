@@ -20,6 +20,11 @@ public class PunchAnalyzer {
     private int FRAME_LENGTH_IN_MS;
     public static final double MPS_TO_KMH = 3.6;   // m/s -> km/h
 
+    // Punch result
+    public boolean isPunch;
+    public boolean isCorrectPunch;
+    public float mySpeed;
+
     // Storage of 20 consecutive raw x values, meanSquareRoot in these buffers
     private List<Float> xValueBuffer = new ArrayList<>();
     private List<Double> meanSquareRootBuffer = new ArrayList<>();
@@ -68,6 +73,7 @@ public class PunchAnalyzer {
         }
     }
 
+
     public void nextFrame(float punchDirection, float wristRotationDirection, float verticalDirection) throws Exception{
 
         if(!isRangeSupported) {
@@ -99,8 +105,10 @@ public class PunchAnalyzer {
          * next 5 data frames are ignored to prevent registering
          * multiple punches
          */
+
         if(punchingDirection >= X_PUNCH_THRESHOLD && !ignoreFrames) {
             System.out.println("punchingDirection over 75: Punch recognized");  // Punch recognised
+
             ignoreFrames = true;
             ignoreCount = PUNCH_BLOCKED_FRAMES;
 
@@ -128,26 +136,34 @@ public class PunchAnalyzer {
 
         if (identificationCount > 0) {
             --identificationCount;
+
             if (punchingDirection < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
                 System.out.println("correct Punch!");
                 identificationCount = 0;        // reset to prevent counting multiple times
-            } else if (identificationCount == 0)
-                System.out.println("Incorrect Punch!");
+            } else if (identificationCount == 0) {
+                Log.d("Algorithm", "Incorrect Punch!");
+                isCorrectPunch = false;
+            }
         }
+
+        // Log.d("My draft", "--------------------------------- analyzeX");
     }
 
     /*
      * Calculates Punch velocity, currently prints result to console
      */
+
     private float calculatePunchVelocity(List<Float> xValueBuffer) throws IllegalArgumentException {
+
 
         int startIndex = findStartIndex(xValueBuffer);
         int endIndex = findEndIndex(xValueBuffer);
 
-        System.out.println("Start Index: " + startIndex);
-        System.out.println("End Index: " + endIndex);
+        Log.d("Algorithm", "Start Index: " + startIndex);
+        Log.d("Algorithm", "End Index: " + endIndex);
 
         if(startIndex == -1 || endIndex == -1) {
+
             System.out.println("Speed calculation: Index not found!");
             return -1;
         }
@@ -176,10 +192,12 @@ public class PunchAnalyzer {
         speedInMps /= 1000; //framelength is in ms
         speedMSR /= 1000;
 
-        System.out.println("Apprx. speed in meters per second: " + speedInMps);
-        System.out.println("Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
-        System.out.println("Apprx. speed(MSR) in meters per second: " + speedMSR);
-        System.out.println("Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
+        Log.d("Algorithm", "Apprx. speed in meters per second: " + speedInMps);
+        Log.d("Algorithm", "Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
+        Log.d("Algorithm", "Apprx. speed(MSR) in meters per second: " + speedMSR);
+        Log.d("Algorithm", "Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
+
+        mySpeed = speedMSR;
         // ------ end speed calculation ------
         return speedMSR;
     }
@@ -204,14 +222,18 @@ public class PunchAnalyzer {
             if (xValueBuffer.get(frameBufferIndex) > -10.0) {
                 startIndex = frameBufferIndex;
                 continueStartSearch = false;
+
                 //for (int i = 0; i < xValueBuffer.size(); ++i) {    // only for debugging
                 //    System.out.println(i + ": " + xValueBuffer.get(i));
                 //}
+
             }
 
             if (frameBufferIndex == 0) {
                 continueStartSearch = false;
+
                 Log.d(TAG, "Start not found!");
+
                 startIndex = -1;
             }
             --frameBufferIndex;
@@ -241,7 +263,9 @@ public class PunchAnalyzer {
 
             if (frameBufferIndex == 0) {
                 continueEndSearch = false;
+
                 Log.d(TAG, "End not found!");
+
                 endIndex = -1;
             }
             --frameBufferIndex;

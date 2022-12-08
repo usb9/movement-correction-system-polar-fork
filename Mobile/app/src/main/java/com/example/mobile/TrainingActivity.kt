@@ -5,7 +5,9 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Pair
-import android.widget.*
+import android.widget.Button
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
@@ -21,11 +23,7 @@ import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStreamReader
+import java.io.*
 import java.util.*
 
 
@@ -54,11 +52,13 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var movementButton: Button
     private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
+    private lateinit var textViewPunchResult: TextView
 
     // Session File
     private val fname: String = "current_session.csv"
     private var file: File? = null
     private var fos: FileOutputStream? = null
+    private var samplingRate = 25 // Handling raw data in file - in Hz
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,6 +69,7 @@ class TrainingActivity : AppCompatActivity() {
         movementButton = findViewById(R.id.movement_button)
         textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
+        textViewPunchResult = findViewById(R.id.view_punch_result)
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -96,7 +97,6 @@ class TrainingActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
-
 
         /*
          * All ble devices discoverable by searchForDevice, api logging enabled
@@ -225,6 +225,28 @@ class TrainingActivity : AppCompatActivity() {
                 toggleButtonUp(movementButton, R.string.start_movement_stream)
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
+
+                // Punch analyzing
+                val punchAnalyzer = PunchAnalyzer(samplingRate)
+
+                punchAnalyzer.isPunch = false
+                punchAnalyzer.isCorrectPunch = false
+                punchAnalyzer.mySpeed = 0F
+
+                readDataFile(fname, punchAnalyzer)
+
+                if (!punchAnalyzer.isPunch) {
+                    textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
+                } else {
+                    if (!punchAnalyzer.isCorrectPunch) {
+                        textViewPunchResult.text = "Your punch is not correct"
+                    } else {
+                        textViewPunchResult.text = "The speed of punch is: ${punchAnalyzer.mySpeed}"
+                    }
+                }
+
+                // Delete current_session.csv (we will move it inside roundButton in the future if need)
+                // deleteFile(fname)
             }
         }
 
@@ -239,6 +261,38 @@ class TrainingActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), PERMISSION_REQUEST_CODE)
         }
     }   // onCreate end
+
+    /*
+     * Handling raw data
+     */
+    private fun readDataFile(fileName: String?, punchAnalyzer: PunchAnalyzer) {
+        try {
+            var fin: FileInputStream? = null
+            fin = openFileInput(fileName)
+            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+
+            val stringBuilder: StringBuilder = StringBuilder()
+            var text: String? = null
+            while (run {
+                    text = bufferedReader.readLine()
+                    text
+                } != null) {
+                stringBuilder.append(text)
+                text?.let {
+                    val values = it.split(",").toTypedArray()
+                    val x = java.lang.Float.valueOf(values[0])
+                    val y = java.lang.Float.valueOf(values[1]) // currently not used
+                    val z = java.lang.Float.valueOf(values[2])
+                    punchAnalyzer.nextFrame(x, y, z)
+                }
+            }
+        } catch (e: FileNotFoundException) {
+            throw RuntimeException(e)
+        } catch (e: IOException) {
+            throw RuntimeException(e)
+        }
+    }
 
     /*
      * check if settings for feature are available
