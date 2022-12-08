@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
-import androidx.core.view.isVisible
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
@@ -482,20 +481,23 @@ class TrainingActivity : AppCompatActivity() {
 
     private fun showCountdown(view1: TextView, view2: TextView){
         Thread {
-//            view1.visibility = TextView.VISIBLE
-//            view2.visibility = TextView.VISIBLE
-
             val timeResponseSecs = timeResponse/1000
 
             for (i in 0..timeResponseSecs) {
                 runOnUiThread {
-                    view2.text = (timeResponseSecs - i).toString()
+                    if (i != 7) {
+                        view1.visibility = TextView.VISIBLE
+                        view2.visibility = TextView.VISIBLE
+
+                        view1.text = "Training starts in"
+                        view2.text = (timeResponseSecs - i).toString()
+                    } else {
+                        view1.visibility = TextView.INVISIBLE
+                        view2.visibility = TextView.INVISIBLE
+                    }
                 }
                 Thread.sleep(1000)
             }
-
-//            view1.visibility = TextView.INVISIBLE
-//            view2.visibility = TextView.INVISIBLE
         }.start()
     }
 

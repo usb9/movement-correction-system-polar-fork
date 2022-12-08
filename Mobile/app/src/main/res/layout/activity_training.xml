@@ -129,6 +129,7 @@
 
     <TextView
         android:id="@+id/view_countdown_1"
+        android:visibility="invisible"
         android:layout_width="280dp"
         android:layout_height="wrap_content"
         android:textAlignment="center"
@@ -143,6 +144,7 @@
 
     <TextView
         android:id="@+id/view_countdown_2"
+        android:visibility="invisible"
         android:layout_width="280dp"
         android:layout_height="wrap_content"
         android:textAlignment="center"
