@@ -10,6 +10,8 @@ package com.example.mobile;
  * Date: 1.12.2022
  */
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,53 +38,78 @@ public class PunchAnalyzer {
     private double X_PUNCH_THRESHOLD = 75.0;
     private double X_MISTAKE_THRESHOLD = -20.0;
 
-    private double MILLI_G_TO_METER_PER_SQUARE_SECOND = 9.81 / 1000.0;
+    private boolean isRangeSupported;
 
-    public PunchAnalyzer(int samplingRate) {
+    private static double MILLI_G_TO_METER_PER_SQUARE_SECOND = 9.81 / 1000.0;
+    private int BUFFER_SIZE;
+    private static final double BUFFER_SIZE_RATIO = 0.8;
+    private static final String TAG = "PUNCH_ANALYZER";
+    private static final int SUPPORTED_RANGE_EQUAL_OR_HIGHER = 8;
+    //
+    public PunchAnalyzer(int samplingRate, int gRange)  {        // buffer size calculation not safe?!
 
-        for(int i = 0; i < 20; ++i) {       // buffer size should always stay the same after
-            xValueBuffer.add((float) i + 1);   // adding data!
-            meanSquareRootBuffer.add((double) i + 1);
+        if(gRange < SUPPORTED_RANGE_EQUAL_OR_HIGHER) {
+            isRangeSupported = false;
         }
+        else {
+            isRangeSupported = true;
+        }
+
 
         SAMPLING_RATE = samplingRate;
         FRAME_LENGTH_IN_MS = 1000 / SAMPLING_RATE;
+        BUFFER_SIZE = (int)(samplingRate / BUFFER_SIZE_RATIO);
         PUNCH_BLOCKED_FRAMES = samplingRate / 5;
         MISTAKE_BLOCKED_FRAMES = 2 * PUNCH_BLOCKED_FRAMES;
+
+        for(int i = 0; i < BUFFER_SIZE; ++i) {       // buffer size should always stay the same afterwards!
+            xValueBuffer.add((float) i + 1);   // adding data!
+            meanSquareRootBuffer.add((double) i + 1);
+        }
     }
 
-    public void nextFrame(float x, float y, float z) {
+    public void nextFrame(float punchDirection, float wristRotationDirection, float verticalDirection) throws Exception{
 
-        x *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
-        y *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
-        z *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
+        if(!isRangeSupported) {
+            Exception e = new Exception("Sensor g range too low!");
+            throw e;
+        }
 
-        double meanSquareRoot = Math.sqrt((((x * x) + (y * y) + (z * z)) / 3.0));
-        xValueBuffer.add(x);                       // new element at the end,
+        punchDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
+        wristRotationDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
+        verticalDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
+
+        double meanSquareRoot = Math.sqrt((((punchDirection * punchDirection) + (wristRotationDirection * wristRotationDirection) + (verticalDirection * verticalDirection)) / 3.0));
+        xValueBuffer.add(punchDirection);       // new element at the end,
         xValueBuffer.remove(0);              // oldest element removed
         meanSquareRootBuffer.add(meanSquareRoot);
         meanSquareRootBuffer.remove(0);
 
-        analyzeX(x);
+        analyzeX(punchDirection);
     }
 
     /*
      * Analyzes current data buffer for punches and mistakes, calls calculatePunchVelocity()
      * when a punch is recognized
      */
-    private void analyzeX(float X) {
+    private void analyzeX(float punchingDirection) {        // change to public for testing
         /*
          * Punch recognition:
          * if x value is at least 75, a punch is registered and calculatePunchVelocity() is called
          * next 5 data frames are ignored to prevent registering
          * multiple punches
          */
-        if(X >= X_PUNCH_THRESHOLD && !ignoreFrames) {
-            System.out.println("X over 75: Punch recognized");  // Punch recognised
+        if(punchingDirection >= X_PUNCH_THRESHOLD && !ignoreFrames) {
+            System.out.println("punchingDirection over 75: Punch recognized");  // Punch recognised
             ignoreFrames = true;
             ignoreCount = PUNCH_BLOCKED_FRAMES;
 
-            calculatePunchVelocity();
+            try {
+            calculatePunchVelocity(xValueBuffer);
+            }
+            catch (IllegalArgumentException e){
+                Log.d(TAG, e.toString());
+            }
         }
 
         /*
@@ -101,7 +128,7 @@ public class PunchAnalyzer {
 
         if (identificationCount > 0) {
             --identificationCount;
-            if (X < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
+            if (punchingDirection < X_MISTAKE_THRESHOLD) {                  // correct punch recognised
                 System.out.println("correct Punch!");
                 identificationCount = 0;        // reset to prevent counting multiple times
             } else if (identificationCount == 0)
@@ -112,17 +139,17 @@ public class PunchAnalyzer {
     /*
      * Calculates Punch velocity, currently prints result to console
      */
-    private void calculatePunchVelocity() {
+    private float calculatePunchVelocity(List<Float> xValueBuffer) throws IllegalArgumentException {
 
-        int startIndex= findStartIndex();
-        int endIndex = findEndIndex();
+        int startIndex = findStartIndex(xValueBuffer);
+        int endIndex = findEndIndex(xValueBuffer);
 
         System.out.println("Start Index: " + startIndex);
         System.out.println("End Index: " + endIndex);
 
         if(startIndex == -1 || endIndex == -1) {
-            System.out.println("Speed calculation: Index error!");
-            return;
+            System.out.println("Speed calculation: Index not found!");
+            return -1;
         }
 
         // ------ speed calculation     ------
@@ -154,14 +181,18 @@ public class PunchAnalyzer {
         System.out.println("Apprx. speed(MSR) in meters per second: " + speedMSR);
         System.out.println("Apprx. speed(MSR) in kilometer per hour: " + (speedMSR * MPS_TO_KMH));
         // ------ end speed calculation ------
-
+        return speedMSR;
     }
 
     /*
      * Finds the Element indicating that the punching movement begins
      */
-    private int findStartIndex() {
+    public int findStartIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
 
+        if(xValueBuffer.size() != BUFFER_SIZE) {
+            IllegalArgumentException e = new IllegalArgumentException("findStartIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + BUFFER_SIZE );
+            throw e;
+        }
         int startIndex = 0;
 
         int frameBufferIndex = xValueBuffer.size() - 5;      // last elements are usually > 0!
@@ -173,14 +204,14 @@ public class PunchAnalyzer {
             if (xValueBuffer.get(frameBufferIndex) > -10.0) {
                 startIndex = frameBufferIndex;
                 continueStartSearch = false;
-                for (int i = 0; i < xValueBuffer.size(); ++i) {    // only for debugging
-                    System.out.println(i + ": " + xValueBuffer.get(i));
-                }
+                //for (int i = 0; i < xValueBuffer.size(); ++i) {    // only for debugging
+                //    System.out.println(i + ": " + xValueBuffer.get(i));
+                //}
             }
 
             if (frameBufferIndex == 0) {
                 continueStartSearch = false;
-                System.out.println("Start not found!");
+                Log.d(TAG, "Start not found!");
                 startIndex = -1;
             }
             --frameBufferIndex;
@@ -191,7 +222,12 @@ public class PunchAnalyzer {
     /*
      * Finds the Element indicating that the punch connects
      */
-    private int findEndIndex() {
+    public int findEndIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
+        if(xValueBuffer.size() != BUFFER_SIZE) {
+            IllegalArgumentException e = new IllegalArgumentException("findEndIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + BUFFER_SIZE );
+            throw e;
+        }
+
         int endIndex = 0;
         int frameBufferIndex = xValueBuffer.size() - 1;      // start from last element
         boolean continueEndSearch = true;
@@ -205,7 +241,7 @@ public class PunchAnalyzer {
 
             if (frameBufferIndex == 0) {
                 continueEndSearch = false;
-                System.out.println("End not found!");
+                Log.d(TAG, "End not found!");
                 endIndex = -1;
             }
             --frameBufferIndex;
