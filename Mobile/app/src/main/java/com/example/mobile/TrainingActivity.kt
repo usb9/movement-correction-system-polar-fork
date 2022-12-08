@@ -229,7 +229,7 @@ class TrainingActivity : AppCompatActivity() {
                 movementDisposable?.dispose()
 
                 // Punch analyzing
-                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
+/*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
 
 
                 readDataFile(fname, punchAnalyzer)
@@ -242,7 +242,7 @@ class TrainingActivity : AppCompatActivity() {
                     } else {
                         textViewPunchResult.text = "The speed of punch is: ${punchAnalyzer.mySpeed}"
                     }
-                }
+                }*/
 
                 // Delete current_session.csv (we will move it inside roundButton in the future if need)
                 // deleteFile(fname)
