@@ -3,8 +3,10 @@ package com.example.mobile
 import android.Manifest
 import android.content.Intent
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.util.Pair
 import android.widget.Button
@@ -270,6 +272,7 @@ class TrainingActivity : AppCompatActivity() {
          * toggle button
          */
         movementButton.setOnClickListener {
+            val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 textViewPunchResult.visibility = TextView.INVISIBLE
@@ -289,9 +292,14 @@ class TrainingActivity : AppCompatActivity() {
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
                                     for (data in polarAccelerometerData.samples) {
-                                        Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
-                                        textViewAccX.text = "X: ${data.x.toString()}"
-                                        fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                        //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
+                                        var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
+                                        if(result.first > 1.0) {
+                                            Log.d(TAG,"Great success!!! You punch " + result.first + "km/h for glorious nation of Kazakhstan!")
+                                            player.start()
+                                            //textViewAccX.text = "Punch speed: ${result.first} - ${result.second}"
+                                            //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                        }
                                     }
                                 },
                                 { error: Throwable ->
@@ -385,7 +393,7 @@ class TrainingActivity : AppCompatActivity() {
                     val x = java.lang.Float.valueOf(values[0])
                     val y = java.lang.Float.valueOf(values[1]) // currently not used
                     val z = java.lang.Float.valueOf(values[2])
-                    punchAnalyzer.nextFrame(x, y, z)
+                    //punchAnalyzer.nextFrame(x, y, z)
                 }
             }
         } catch (e: FileNotFoundException) {
@@ -414,14 +422,15 @@ class TrainingActivity : AppCompatActivity() {
 
                 Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
 
-                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1)         // get current sample rate and range
+                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1) {         // get current sample rate and range
                     range = available.settings[PolarSensorSetting.SettingType.RANGE]?.first() ?: -1
                     punchAnalyzer.setRange(range)                                                   // set in PunchAnalyzer
-
-                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1)
-                    sampleRate = available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first() ?: -1
+                }
+                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1) {
+                    sampleRate =
+                        available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first()                            ?: -1
                     punchAnalyzer.setSampleRate(sampleRate)
-
+                }
                 Log.d(TAG, "Range =" + range + " Sample rate =" + sampleRate)
 
                 return@zip android.util.Pair(available, all)

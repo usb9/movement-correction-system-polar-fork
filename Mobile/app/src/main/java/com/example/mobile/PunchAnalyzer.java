@@ -20,8 +20,9 @@ import java.util.List;
 public class PunchAnalyzer {
 
     // Storage of consecutive raw/modified data values in these buffers
-    private List<Float> xValueBuffer = new ArrayList<>();
+    private List<Double> xValueBuffer = new ArrayList<>();
     private List<Double> RootMeanSquareBuffer = new ArrayList<>();
+    private List<Double> XYBuffer = new ArrayList<>();
 
     // for punch identification, a specified number of frames has to be ignored
     // (exact number depends on the sampling rate, see constructor)
@@ -38,6 +39,7 @@ public class PunchAnalyzer {
     // x value thresholds for registering punches and arm drops
     private final static double X_PUNCH_THRESHOLD = 75.0;
     private final static double X_MISTAKE_THRESHOLD = -20.0;
+    private final static double START_THRESHOLD = - 12.0;
 
     private int range;
     private static final int LOW_RANGE = 8;
@@ -64,40 +66,48 @@ public class PunchAnalyzer {
 
     private static final String TAG = "PUNCH_ANALYZER";
 
-    public PunchAnalyzer()  {
+    boolean invertSign;
 
+    public PunchAnalyzer()  {
+        invertSign = false;
     }
 
     public PunchAnalyzer(int SampleRate, int Range) {
+        invertSign = false;
         setSampleRate(SampleRate);
         setRange(Range);
+        Log.d(TAG, "buffer sizes: " + xValueBuffer.size() + ", " + RootMeanSquareBuffer.size());
     }
 
     public void setSampleRate(int SampleRate) throws IllegalArgumentException{         // also sets sample rate dependent constants, initializes buffers!
 
-        if(sampleRate == 26) {
+        if(!xValueBuffer.isEmpty() || !RootMeanSquareBuffer.isEmpty()) {
+            xValueBuffer.clear();
+            RootMeanSquareBuffer.clear();
+            XYBuffer.clear();
+        }
+        Log.d(TAG, "SR: " +  SampleRate);
+        if(SampleRate == 26) {
             bufferSize = BUFFER_SIZE_26_HZ;
             frameLengthInMs = FRAME_LENGTH_IN_MS_26_HZ;
             punchBlockedFrames = P_BLOCKED_26_HZ;
             mistakeBlockedFrames = M_BLOCKED_26_HZ;
             sampleRate = SampleRate;
         }
-        else if(sampleRate == 52) {
+        if(SampleRate == 52) {
             bufferSize = BUFFER_SIZE_52_HZ;
             frameLengthInMs = FRAME_LENGTH_IN_MS_52_HZ;
             punchBlockedFrames = P_BLOCKED_52_HZ;
             mistakeBlockedFrames = M_BLOCKED_52_HZ;
             sampleRate = SampleRate;
         }
-        else {
-            IllegalArgumentException e = new IllegalArgumentException(TAG + "Bad sample rate: " + SampleRate);
-            throw e;
-        }
 
         for(int i = 0; i < bufferSize; ++i) {       // buffer size should always stay the same afterwards!
-            xValueBuffer.add((float) i + 1);   // adding data!
+            xValueBuffer.add((double) i + 1);   // adding data!
             RootMeanSquareBuffer.add((double) i + 1);
+            XYBuffer.add((double) i + 1);
         }
+        Log.d(TAG, "buffer sizes: " + xValueBuffer.size() + ", " + RootMeanSquareBuffer.size());
         Log.d(TAG, "Sample rate set to " + sampleRate);
     }
 
@@ -121,18 +131,29 @@ public class PunchAnalyzer {
     }
 
 
-    public Pair<Double, Boolean> nextFrame(float punchDirection, float wristRotationDirection, float verticalDirection){
+    public Pair<Double, Boolean> nextFrame(int PunchDirection, int WristRotationDirection, int VerticalDirection){
+
+        double punchDirection = (double) PunchDirection;
+        double wristRotationDirection = (double) WristRotationDirection;
+        double verticalDirection = (double) VerticalDirection;
 
         punchDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
         wristRotationDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
         verticalDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
 
         double meanSquareRoot = Math.sqrt((((punchDirection * punchDirection) + (wristRotationDirection * wristRotationDirection) + (verticalDirection * verticalDirection)) / 3.0));
+        //double XYRootMeanSquare = Math.sqrt((((punchDirection * punchDirection) + (wristRotationDirection * wristRotationDirection))  / 2.0));
 
+        //Log.d(TAG, "Next: adding new values...");
         xValueBuffer.add(punchDirection);       // new element at the end,
         xValueBuffer.remove(0);              // oldest element removed
         RootMeanSquareBuffer.add(meanSquareRoot);
         RootMeanSquareBuffer.remove(0);
+
+        //XYBuffer.add(XYRootMeanSquare);
+        //XYBuffer.remove(0);
+
+        //Log.d(TAG, "Next: values added");
 
         return analyzeX(punchDirection);
     }
@@ -143,10 +164,11 @@ public class PunchAnalyzer {
      * returns Pair containing Punch speed, true->correct punch / false->incorrect punch after a punch is recognized
      * returns null when no punch is recognized or more frames are needed for full analysis
      */
-    private Pair<Double,Boolean> analyzeX(float punchingDirection) {        // change to public for testing
+    private Pair<Double,Boolean> analyzeX(double punchingDirection) {        // change to public for testing
 
-        Pair<Double, Boolean> result = null;
-        boolean invertSign = false;
+
+        //Pair<Double, Boolean> result = null;
+        Pair<Double, Boolean> result = new Pair<Double, Boolean>(-1.0, false);
 
         /*
          * Punch recognition:
@@ -155,16 +177,33 @@ public class PunchAnalyzer {
          * multiple punches
          */
         if(Math.abs(punchingDirection) >= X_PUNCH_THRESHOLD && !ignoreFrames) {
-            System.out.println("punchingDirection over 75: Punch recognized");  // Punch recognised
+            Log.d(TAG, "punchingDirection over 75: Punch recognized");  // Punch recognised
 
-            if(punchingDirection < 0)
+            /*
+            * temporary solution?! when measured values exceed the sensor range,
+            * the received value always seems to be the maximum positive value
+            * even when it should be negative!
+            * However, the measurement before SHOULD be negative in that case...
+            */
+            if(xValueBuffer.get(xValueBuffer.size() - 2) < 0) {
                 invertSign = true;
+                Log.d(TAG, "Values inverted!");
+            }
+            else {
+                invertSign = false;
+                Log.d(TAG, "Values NOT inverted!");
+            }
+            /*
+            if(punchingDirection < 0) {
+                invertSign = true;
+                Log.d(TAG, "Values inverted!");
+            }*/
 
             ignoreFrames = true;
             ignoreCount = punchBlockedFrames;
-
             try {
-                punchSpeed = calculatePunchVelocity(xValueBuffer);
+                Log.d(TAG, "Analyze: starting speed calculation...");
+                punchSpeed = calculatePunchVelocity();
             }
             catch (IllegalArgumentException e){
                 Log.d(TAG, e.toString());
@@ -188,12 +227,13 @@ public class PunchAnalyzer {
         if (identificationCount > 0) {
             --identificationCount;
 
-            if (punchingDirection < X_MISTAKE_THRESHOLD || (invertSign && - punchingDirection < X_MISTAKE_THRESHOLD)) {          // correct punch recognised
+            if (punchingDirection < X_MISTAKE_THRESHOLD || (invertSign && invertDoubleSign(punchingDirection) < X_MISTAKE_THRESHOLD)) {          // correct punch recognised
                 identificationCount = 0;                            // reset to prevent counting multiple times
                 result = new Pair<>(punchSpeed, true);
                 Log.d(TAG, "Correct, speed: " + result.first);
 
-            } else if (identificationCount == 0) {
+            }
+            else if (identificationCount == 0) {
                 result = new Pair<>(punchSpeed, false);
                 Log.d(TAG, "Incorrect, speed: " + result.first);
             }
@@ -204,14 +244,25 @@ public class PunchAnalyzer {
     /*
      * Calculates and returns Punch velocity
      */
+    private Double calculatePunchVelocity() throws IllegalArgumentException {
 
-    private Double calculatePunchVelocity(List<Float> xValueBuffer) throws IllegalArgumentException {
+        int startIndex = findStartIndex();
+        int endIndex = findEndIndex();
 
-        int startIndex = findStartIndex(xValueBuffer);
-        int endIndex = findEndIndex(xValueBuffer);
 
-        Log.d("Algorithm", "Start Index: " + startIndex);
-        Log.d("Algorithm", "End Index: " + endIndex);
+        Log.d(TAG, "Start Index: " + startIndex + " " + xValueBuffer.get(startIndex));
+        Log.d(TAG, "End Index: " + endIndex + " " + xValueBuffer.get(endIndex));
+        Log.d(TAG, "RMS Start Index: " + startIndex + " " + RootMeanSquareBuffer.get(startIndex));
+        Log.d(TAG, "RMS End Index: " + endIndex + " " + RootMeanSquareBuffer.get(endIndex));
+        //Log.d(TAG, "XY Start Index: " + startIndex + " " + XYBuffer.get(startIndex));
+        //Log.d(TAG, "XY End Index: " + endIndex + " " + XYBuffer.get(endIndex));
+
+        for(int i = 0; i < xValueBuffer.size(); ++i)
+            Log.d(TAG, "xBuf: " + xValueBuffer.get(i));
+        for(int i = 0; i < xValueBuffer.size(); ++i)
+            Log.d(TAG, "RMSBuf: " + RootMeanSquareBuffer.get(i));
+        //for(int i = 0; i < xValueBuffer.size() - 1; ++i)
+        //    Log.d(TAG, "XYBuf: " + XYBuffer.get(i));
 
         if(startIndex == -1 || endIndex == -1) {
 
@@ -222,70 +273,77 @@ public class PunchAnalyzer {
         // ------ speed calculation     ------
         double speedInMps = 0;
         double speedRMS = 0;
-        for (int i = startIndex; i < endIndex - 1; ++i) {
+        double speedXY = 0;
+        for (int i = startIndex; i <= endIndex; ++i) {
             speedInMps += (frameLengthInMs * Math.abs(xValueBuffer.get(i)));
             speedRMS += (frameLengthInMs * Math.abs(RootMeanSquareBuffer.get(i)));
+            speedXY += (frameLengthInMs * Math.abs(XYBuffer.get(i)));
             if (i < endIndex - 2) {
                 speedInMps += ((frameLengthInMs * Math.abs(xValueBuffer.get(i)
                         - xValueBuffer.get(i + 1))) / 2.0);
                 speedRMS += ((frameLengthInMs * Math.abs(RootMeanSquareBuffer.get(i)
                         - RootMeanSquareBuffer.get(i + 1))) / 2.0);
+                speedXY += ((frameLengthInMs * Math.abs(XYBuffer.get(i)
+                        - XYBuffer.get(i + 1))) / 2.0);
             }
             else {
                 speedInMps += (((frameLengthInMs / 2.0) * Math.abs(xValueBuffer.get(i))) / 2.0);
                 speedRMS += (((frameLengthInMs / 2.0) * Math.abs(RootMeanSquareBuffer.get(i))) / 2.0);
+                speedXY += (((frameLengthInMs / 2.0) * Math.abs(XYBuffer.get(i))) / 2.0);
             }
-            speedInMps -= frameLengthInMs * 10.0;
-            speedRMS -= frameLengthInMs * 5.74;
+            //speedInMps -= frameLengthInMs * 10.0;
+            //speedRMS -= frameLengthInMs * 5.74;
         }
 
         speedInMps /= 1000; //framelength is in ms
         speedRMS /= 1000;
+        speedXY /= 1000;
         // ------ end speed calculation ------
 
         Log.d(TAG, "Apprx. speed in meters per second: " + speedInMps);
         Log.d(TAG, "Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
         Log.d(TAG, "Apprx. speed(RMS) in meters per second: " + speedRMS);
         Log.d(TAG, "Apprx. speed(RMS) in kilometer per hour: " + (speedRMS * MPS_TO_KMH));
+        //Log.d(TAG, "Apprx. speed(XY) in meters per second: " + speedXY);
+        //Log.d(TAG, "Apprx. speed(XY) in kilometer per hour: " + (speedXY * MPS_TO_KMH));
 
-        return speedRMS;
+        return speedRMS * MPS_TO_KMH;
     }
 
     /*
      * Finds and returns the Element indicating that the punching movement begins
      */
-    public int findStartIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
+    private int findStartIndex() throws IllegalArgumentException{
 
+        Log.d(TAG, "startIndex: starting...");
         if(xValueBuffer.size() != bufferSize) {
             IllegalArgumentException e = new IllegalArgumentException("findStartIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
             throw e;
         }
         int startIndex = 0;
 
-        int frameBufferIndex = xValueBuffer.size() - 5;      // last elements are usually > 0!
+        int frameBufferIndex = 0;
         boolean continueStartSearch = true;
 
+        Log.d(TAG, "startIndex: first loop at " + frameBufferIndex + " size " + xValueBuffer.size() + " starting...");
 
-        while (continueStartSearch) {                       // search for element > -10.0 starts here,
+        while (continueStartSearch) {                       // search for element > -15.0 starts here,
 
-            if (xValueBuffer.get(frameBufferIndex) > -10.0) {
+            if (!invertSign && xValueBuffer.get(frameBufferIndex) < START_THRESHOLD) {
                 startIndex = frameBufferIndex;
                 continueStartSearch = false;
-
-                //for (int i = 0; i < xValueBuffer.size(); ++i) {    // only for debugging
-                //    System.out.println(i + ": " + xValueBuffer.get(i));
-                //}
-
+            }
+            if (invertSign && xValueBuffer.get(frameBufferIndex) > invertDoubleSign(START_THRESHOLD)) {
+                startIndex = frameBufferIndex;
+                continueStartSearch = false;
             }
 
-            if (frameBufferIndex == 0) {
+            if (frameBufferIndex == xValueBuffer.size() - 1) {
                 continueStartSearch = false;
-
                 Log.d(TAG, "Start not found!");
-
                 startIndex = -1;
             }
-            --frameBufferIndex;
+            ++frameBufferIndex;
         }
         return startIndex;
     }
@@ -293,34 +351,46 @@ public class PunchAnalyzer {
     /*
      * Finds and returns the Element indicating that the punch connects
      */
-    public int findEndIndex(List<Float> xValueBuffer) throws IllegalArgumentException{
+    private int findEndIndex() throws IllegalArgumentException{
         if(xValueBuffer.size() != bufferSize) {
             IllegalArgumentException e = new IllegalArgumentException("findEndIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
             throw e;
         }
-
+        int frameBufferIndex;
         int endIndex = 0;
-        int frameBufferIndex = xValueBuffer.size() - 1;      // start from last element
+        if(!invertSign) {
+            frameBufferIndex = xValueBuffer.size() - 1;      // start from last element
+        }
+        else {
+            frameBufferIndex = xValueBuffer.size() - 2;
+        }
+
         boolean continueEndSearch = true;
 
-        while (continueEndSearch) {                       // search for element > -10.0 starts here,
+        while (continueEndSearch) {                       // search for element < 0.0 starts here,
 
-            if (xValueBuffer.get(frameBufferIndex) < 0) {
+            if (!invertSign && xValueBuffer.get(frameBufferIndex) < 0) {
+                endIndex = frameBufferIndex;
+                continueEndSearch = false;
+            }
+            if (invertSign && xValueBuffer.get(frameBufferIndex) > 0) {
+
                 endIndex = frameBufferIndex;
                 continueEndSearch = false;
             }
 
             if (frameBufferIndex == 0) {
                 continueEndSearch = false;
-
                 Log.d(TAG, "End not found!");
-
                 endIndex = -1;
             }
             --frameBufferIndex;
         }
-
         return endIndex;
+    }
+
+    private double invertDoubleSign(double d) {
+        return d * -1.0;
     }
 
 }
