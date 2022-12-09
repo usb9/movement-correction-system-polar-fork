@@ -52,6 +52,7 @@ class TrainingActivity : AppCompatActivity() {
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
+    private val MINIMUM_SPEED = 10.0
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
@@ -294,10 +295,9 @@ class TrainingActivity : AppCompatActivity() {
                                     for (data in polarAccelerometerData.samples) {
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
-                                        if(result.first > 1.0) {
-                                            Log.d(TAG,"Great success!!! You punch " + result.first + "km/h for glorious nation of Kazakhstan!")
+                                        if(result.first > MINIMUM_SPEED) {
+                                            Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
                                             player.start()
-                                            //textViewAccX.text = "Punch speed: ${result.first} - ${result.second}"
                                             //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
                                         }
                                     }
