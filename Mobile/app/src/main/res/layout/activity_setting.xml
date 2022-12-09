@@ -22,37 +22,72 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
     <Button
         android:id="@+id/scan_button"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="76dp"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="68dp"
         android:text="@string/scan_devices"
-        android:textSize="20sp"
+        android:textSize="18sp"
         app:cornerRadius="20dp"
-        app:layout_constraintEnd_toStartOf="@id/spinner"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/setting_nav_bar" />
 
+
     <Spinner
         android:id="@+id/spinner"
-        android:layout_width="0dp"
+        android:layout_width="170dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="76dp"
+        android:layout_marginTop="36dp"
+        android:layout_marginEnd="32dp"
+        android:background="#30ffffff"
         android:minHeight="48dp"
+        app:layout_constraintBottom_toTopOf="@+id/sound_btn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
-        app:layout_constraintStart_toEndOf="@id/scan_button"
+        app:layout_constraintTop_toBottomOf="@+id/found_sensors"
+        app:layout_constraintVertical_bias="0.246" />
+
+    <TextView
+        android:id="@+id/found_sensors"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:text="Found ... sensors"
+        android:textColor="@color/green_ground"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.392"
+        app:layout_constraintStart_toEndOf="@+id/scan_button"
         app:layout_constraintTop_toBottomOf="@+id/setting_nav_bar" />
+
+
+    <TextView
+        android:id="@+id/choose_sensors"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Choose sensors"
+        android:textColor="@color/green_ground"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@+id/sound_btn"
+        app:layout_constraintEnd_toStartOf="@+id/spinner"
+        app:layout_constraintHorizontal_bias="0.173"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/scan_button"
+        app:layout_constraintVertical_bias="0.388" />
 
     <Switch
         android:id="@+id/sound_btn"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="224dp"
+        android:layout_marginTop="272dp"
         android:checked="false"
         android:gravity="left"
         android:minHeight="48dp"
@@ -61,6 +96,7 @@
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.504"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/setting_nav_bar" />
 
@@ -77,7 +113,7 @@
         android:id="@+id/notification_btn"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="24dp"
         android:checked="false"
         android:gravity="left"
         android:minHeight="48dp"
@@ -86,7 +122,7 @@
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintHorizontal_bias="0.504"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sound_btn" />
 
