@@ -1,7 +1,12 @@
 package com.example.mobile
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +14,9 @@ import android.view.View
 import android.widget.*
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.DrawableCompat
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
@@ -16,6 +24,7 @@ import com.polar.sdk.api.PolarBleApiDefaultImpl
 import com.polar.sdk.api.model.PolarDeviceInfo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.Disposable
+import kotlinx.android.synthetic.main.activity_setting.*
 import java.io.FileOutputStream
 import java.util.*
 
@@ -25,6 +34,7 @@ class SettingActivity : AppCompatActivity() {
         private const val TAG = "SettingActivity"
         private const val API_LOGGER_TAG = "API LOGGER"
         private const val PERMISSION_REQUEST_CODE = 1
+        lateinit var aManager:AudioManager
     }
 
     private var deviceId = ""
@@ -43,6 +53,12 @@ class SettingActivity : AppCompatActivity() {
 
     // ATTENTION! list devices ID of Polar at index 1st to n
     private val listDeviceId = mutableListOf<String>("select one device")
+
+    //NOTIFICATION BUTTON
+    val CHANNEL_ID = "channelID"
+    val CHANNEL_NAME = "channelname"
+    val NOTIFICATION_ID = 0
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -179,6 +195,55 @@ class SettingActivity : AppCompatActivity() {
             startActivity(homePage)
             finish()
         }
+
+        //
+        //CREATE SOUND BUTTON
+        //
+        val soundBtn = findViewById<Switch>(R.id.sound_btn)
+        val aManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        soundBtn.setOnCheckedChangeListener { Switch , isChecked ->
+            if (isChecked) {
+                // The switch is enabled/checked
+                    aManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                    Toast.makeText(this, "Sound Mode On", Toast.LENGTH_LONG).show()
+            } else {
+                // The switch is disabled
+                aManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+                Toast.makeText(this, "Vibrate Mode On", Toast.LENGTH_LONG).show()
+            }
+
+            }
+
+        //
+        //CREATE NOTIFICATION
+        //
+        createNotificationChannel()
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Punch Results")
+            .setContentText("This is your punch result")
+            . setSmallIcon(R.drawable.ic_notifications)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        val notificationManager = NotificationManagerCompat.from (this)
+
+        notification_btn.setOnCheckedChangeListener { Switch , isChecked ->
+            if (isChecked) {
+                // The switch is enabled/checked
+                notificationManager.notify(NOTIFICATION_ID, notification)
+                Toast.makeText(this, "Notification Mode On", Toast.LENGTH_LONG).show()
+            } else {
+                // The switch is disabled
+                Toast.makeText(this, "Notification Mode Off", Toast.LENGTH_LONG).show()
+            }
+
+        }
+
+
+
+
     }   // onCreate end
 
     public override fun onPause() {
@@ -193,6 +258,18 @@ class SettingActivity : AppCompatActivity() {
     public override fun onDestroy() {
         super.onDestroy()
         api.shutDown()
+    }
+
+    fun createNotificationChannel(){
+        if (Build. VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            val channel = NotificationChannel (CHANNEL_ID, CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT).apply{
+                    lightColor = Color.RED
+                    enableLights(true)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 
     private fun toggleButtonDown(button: Button, @StringRes resourceId: Int) {
@@ -227,4 +304,10 @@ class SettingActivity : AppCompatActivity() {
 
     private fun enableAllButtons() {
     }
+
+
+
+
+
+
 }

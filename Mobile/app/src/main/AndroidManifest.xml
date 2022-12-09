@@ -9,8 +9,8 @@
     <!--
  Allows Polar SDK to connect to paired bluetooth devices. Legacy Bluetooth permission,
      which is needed on devices with API 30 (Android Q) or older.
-    --><uses-permission android:name="android.permission.INTERNET" />
-
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
@@ -36,6 +36,8 @@
         android:name="android.permission.ACCESS_COARSE_LOCATION"
         android:maxSdkVersion="30" />
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -47,57 +49,65 @@
         android:theme="@style/Theme.Mobile"
         tools:targetApi="31">
         <activity
-            android:label="HOME"
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+        <activity
             android:name=".HomeActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="HOME">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="STATISTIC"
             android:name=".StatisticActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="STATISTIC">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="SIGN IN"
             android:name=".SignInActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="SIGN IN">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="SIGN UP"
             android:name=".SignUpActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="SIGN UP">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="SETTINGS"
             android:name=".SettingActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="SETTINGS">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="TRAINING"
             android:name=".TrainingActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="TRAINING">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:label="HELP"
             android:name=".HelpActivity"
-            android:exported="false">
+            android:exported="false"
+            android:label="HELP">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
