@@ -57,4 +57,5 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics-ktx'
     implementation platform('com.google.firebase:firebase-bom:31.1.0')
     //implementation 'com.github.AnyChart:AnyChart-Android:1.1.2'
+    implementation 'com.google.android.material:material:1.8.0-alpha03'
 }
