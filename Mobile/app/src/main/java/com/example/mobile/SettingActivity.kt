@@ -10,6 +10,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.annotation.StringRes
@@ -50,15 +51,17 @@ class SettingActivity : AppCompatActivity() {
 
     private lateinit var scanButton: Button
     private lateinit var backNavigation: TextView
+    private lateinit var foundSensors: TextView
 
     // ATTENTION! list devices ID of Polar at index 1st to n
     private val listDeviceId = mutableListOf<String>("select one device")
+
+    private var numberOfSensors : Int = 0
 
     //NOTIFICATION BUTTON
     val CHANNEL_ID = "channelID"
     val CHANNEL_NAME = "channelname"
     val NOTIFICATION_ID = 0
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +70,9 @@ class SettingActivity : AppCompatActivity() {
 
         scanButton = findViewById(R.id.scan_button)
         backNavigation = findViewById(R.id.setting_nav_bar)
+        foundSensors = findViewById(R.id.found_sensors)
+
+        foundSensors.visibility = TextView.INVISIBLE
 
         api.setPolarFilter(false)
         api.setApiLogger { s: String -> Log.d(API_LOGGER_TAG, s) }
@@ -80,7 +86,7 @@ class SettingActivity : AppCompatActivity() {
                     showToast("Phone Bluetooth on")
                 } else {
                     disableAllButtons()
-                    showToast("Phone Bluetooth off")
+                    showToast("Phone Bluetooth off. Please, turn on bluetooth and sensor", "warning")
                 }
             }
 
@@ -156,12 +162,17 @@ class SettingActivity : AppCompatActivity() {
                     .subscribe(
                         { polarDeviceInfo: PolarDeviceInfo ->
                             listDeviceId.add("${polarDeviceInfo.deviceId}")
-                            showToast("Found and added ${polarDeviceInfo.deviceId}")
+
+                            numberOfSensors += 1
+                            foundSensors.visibility = TextView.VISIBLE
+                            foundSensors.text = getString(R.string.show_the_number_of_sensor, numberOfSensors.toString())
+
+                            showToast("Founded your sensors")
                             // Log.d(TAG, "polar device found id: " + polarDeviceInfo.deviceId + " address: " + polarDeviceInfo.address + " rssi: " + polarDeviceInfo.rssi + " name: " + polarDeviceInfo.name + " isConnectable: " + polarDeviceInfo.isConnectable)
                         },
                         { error: Throwable ->
                             toggleButtonUp(scanButton, "Scan devices")
-                            showToast("$error")
+                            showToast("$error", "warning")
                             // Log.e(TAG, "Device scan failed. Reason $error")
                         },
                         {
@@ -173,6 +184,8 @@ class SettingActivity : AppCompatActivity() {
                     )
             } else {
                 toggleButtonUp(scanButton, "Scan devices")
+                foundSensors.visibility = TextView.INVISIBLE
+                numberOfSensors = 0
                 scanDisposable?.dispose()
             }
         }
@@ -293,10 +306,20 @@ class SettingActivity : AppCompatActivity() {
         button.background = buttonDrawable
     }
 
-    private fun showToast(message: String) {
+    private fun showToast(message: String, status: String = "info") {
         val toast = Toast.makeText(applicationContext, message, Toast.LENGTH_LONG)
-        toast.show()
 
+        toast.setGravity(Gravity.CENTER, 0, 0)
+
+        val view = toast.view
+        // view!!.setBackgroundResource(android.R.drawable.alert_light_frame)
+        val text = view!!.findViewById<View>(android.R.id.message) as TextView
+
+        if (status != "info") {  // info or warning as Log function
+            text.setTextColor(Color.RED)
+        }
+        text.textSize = 20F
+        toast.show()
     }
 
     private fun disableAllButtons() {
