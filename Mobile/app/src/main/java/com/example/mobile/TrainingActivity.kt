@@ -3,8 +3,10 @@ package com.example.mobile
 import android.Manifest
 import android.content.Intent
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.util.Pair
 import android.widget.Button
@@ -50,6 +52,7 @@ class TrainingActivity : AppCompatActivity() {
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
+    private val MINIMUM_SPEED = 10.0
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
@@ -65,7 +68,9 @@ class TrainingActivity : AppCompatActivity() {
     private val fname: String = "current_session.csv"
     private var file: File? = null
     private var fos: FileOutputStream? = null
-    private var samplingRate = 25 // Handling raw data in file - in Hz
+    private var sampleRate = 26 // Handling raw data in file - in Hz
+    private var range = 8;
+    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
 
     // Latency
     private val timeResponse = 7000
@@ -268,6 +273,7 @@ class TrainingActivity : AppCompatActivity() {
          * toggle button
          */
         movementButton.setOnClickListener {
+            val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 textViewPunchResult.visibility = TextView.INVISIBLE
@@ -287,9 +293,13 @@ class TrainingActivity : AppCompatActivity() {
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
                                     for (data in polarAccelerometerData.samples) {
-                                        Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
-                                        textViewAccX.text = "X: ${data.x.toString()}"
-                                        fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                        //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
+                                        var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
+                                        if(result.first > MINIMUM_SPEED) {
+                                            Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            player.start()
+                                            //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                        }
                                     }
                                 },
                                 { error: Throwable ->
@@ -308,11 +318,8 @@ class TrainingActivity : AppCompatActivity() {
                 movementDisposable?.dispose()
 
                 // Punch analyzing
-                val punchAnalyzer = PunchAnalyzer(samplingRate)
+/*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
 
-                punchAnalyzer.isPunch = false
-                punchAnalyzer.isCorrectPunch = false
-                punchAnalyzer.mySpeed = 0F
 
                 readDataFile(fname, punchAnalyzer)
 
@@ -331,7 +338,7 @@ class TrainingActivity : AppCompatActivity() {
                         textViewSpeed.visibility = TextView.VISIBLE
                         textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
                     }
-                }
+                }*/
 
                 // Delete current_session.csv (we will move it inside roundButton in the future if need)
                 // deleteFile(fname)
@@ -386,7 +393,7 @@ class TrainingActivity : AppCompatActivity() {
                     val x = java.lang.Float.valueOf(values[0])
                     val y = java.lang.Float.valueOf(values[1]) // currently not used
                     val z = java.lang.Float.valueOf(values[2])
-                    punchAnalyzer.nextFrame(x, y, z)
+                    //punchAnalyzer.nextFrame(x, y, z)
                 }
             }
         } catch (e: FileNotFoundException) {
@@ -412,7 +419,20 @@ class TrainingActivity : AppCompatActivity() {
                 throw Throwable("Settings are not available")
             } else {
                 Log.d(TAG, "Feature " + feature + " available settings " + available.settings)
+
                 Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
+
+                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1) {         // get current sample rate and range
+                    range = available.settings[PolarSensorSetting.SettingType.RANGE]?.first() ?: -1
+                    punchAnalyzer.setRange(range)                                                   // set in PunchAnalyzer
+                }
+                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1) {
+                    sampleRate =
+                        available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first()                            ?: -1
+                    punchAnalyzer.setSampleRate(sampleRate)
+                }
+                Log.d(TAG, "Range =" + range + " Sample rate =" + sampleRate)
+
                 return@zip android.util.Pair(available, all)
             }
         }
