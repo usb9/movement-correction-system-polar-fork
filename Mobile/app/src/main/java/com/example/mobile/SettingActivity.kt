@@ -229,8 +229,8 @@ class SettingActivity : AppCompatActivity() {
         soundBtn.setOnCheckedChangeListener { Switch , isChecked ->
             if (isChecked) {
                 // The switch is enabled/checked
-                    aManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-                    Toast.makeText(this, "Sound Mode On", Toast.LENGTH_LONG).show()
+                aManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                Toast.makeText(this, "Sound Mode On", Toast.LENGTH_LONG).show()
             } else {
                 // The switch is disabled
                 aManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
