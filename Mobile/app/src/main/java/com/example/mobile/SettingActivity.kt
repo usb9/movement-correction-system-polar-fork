@@ -71,6 +71,8 @@ class SettingActivity : AppCompatActivity() {
         scanButton = findViewById(R.id.scan_button)
         backNavigation = findViewById(R.id.setting_nav_bar)
         foundSensors = findViewById(R.id.found_sensors)
+        val startTraining = findViewById<Button>(R.id.start_training_btn)
+
 
         foundSensors.visibility = TextView.INVISIBLE
 
@@ -205,6 +207,15 @@ class SettingActivity : AppCompatActivity() {
          */
         backNavigation.setOnClickListener {
             val homePage = Intent(this, HomeActivity::class.java)
+            startActivity(homePage)
+            finish()
+        }
+
+        /*
+         * Navigation to Training Activity
+         */
+        startTraining.setOnClickListener {
+            val homePage = Intent(this, TrainingActivity::class.java)
             startActivity(homePage)
             finish()
         }
