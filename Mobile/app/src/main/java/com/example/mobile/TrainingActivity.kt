@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
@@ -29,6 +30,8 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.io.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 
@@ -64,10 +67,17 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
 
-    // Session File
-    private val fname: String = "current_session.csv"
-    private var file: File? = null
+
+    private var sessionsInfoFileName: String = "session_count.txt"
+    //private var sessionCountFile: File? = null
+    private var sessionCount = 0
+
+    private var roundNumber = 0
+    private var dataReceived = false
     private var fos: FileOutputStream? = null
+    private var sessionFileName: String? = null
+    private var sessionFile: File? = null
+    private var sessionOut: FileOutputStream? = null
     private var sampleRate = 26 // Handling raw data in file - in Hz
     private var range = 8;
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
@@ -96,9 +106,6 @@ class TrainingActivity : AppCompatActivity() {
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
-        file = File(filesDir.absolutePath, fname)
-        fos = FileOutputStream(file)
-
         /*
          * get deviceId from MyDevicesId.txt
          */
@@ -120,6 +127,8 @@ class TrainingActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
+
+
 
 
         /*
@@ -274,10 +283,17 @@ class TrainingActivity : AppCompatActivity() {
          */
         movementButton.setOnClickListener {
             val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
+
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
+
+                sessionFile = File(filesDir.absolutePath, sessionFileName)
+                sessionOut = FileOutputStream(sessionFile)
+                ++roundNumber
+                var roundStartLine = "round" + "(" + roundNumber + ")" + "\n"
+                sessionOut!!.write(roundStartLine.toByteArray())
 
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
 
@@ -298,6 +314,11 @@ class TrainingActivity : AppCompatActivity() {
                                         if(result.first > MINIMUM_SPEED) {
                                             Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
                                             player.start()
+                                            textViewSpeed.visibility = TextView.VISIBLE
+                                            textViewSpeed.text = getString(R.string.speed, result.first.toString())
+                                            var punchString = "punch(" + result.first.toString() + "," + result.second.toString() + ")"
+                                            sessionOut!!.write(punchString.toByteArray())
+                                            dataReceived = true
                                             //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
                                         }
                                     }
@@ -316,6 +337,11 @@ class TrainingActivity : AppCompatActivity() {
                 toggleButtonUp(movementButton, R.string.start_movement_stream)
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
+                if(dataReceived) {
+                    var roundEndLine = "round_info" + "(" + roundNumber + "," + "10.0)" + "\n"
+                    sessionOut!!.write(roundEndLine.toByteArray())
+                }
+
 
                 // Punch analyzing
 /*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
@@ -370,6 +396,66 @@ class TrainingActivity : AppCompatActivity() {
         }
 
     }   // onCreate end
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onStart() {
+        var lastSessionFinished = false
+        var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
+        val isCreated :Boolean = sessionInfoFile.createNewFile()
+        if (isCreated) {
+            Log.d(TAG, "No sessions yet")
+            sessionCount = 1
+            var outString = sessionCount.toString() + "\n"
+            var finishedLine = 0
+            var countOutStream = FileOutputStream(sessionInfoFile)
+            countOutStream.write(outString.toByteArray())
+            countOutStream.write(finishedLine.toString().toByteArray())
+            lastSessionFinished = true
+        }
+        else {
+            var countInStream = openFileInput(sessionsInfoFileName)
+            var inputStreamReader = InputStreamReader(countInStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+            try {
+                sessionCount = Integer.parseInt(bufferedReader.readLine())
+                var continueSession = Integer.parseInt(bufferedReader.readLine())
+                Log.d(TAG, "ContinueSession: " + continueSession)
+                if (continueSession == 0) {
+                    Log.d(TAG, "Old Session number: " + sessionCount)
+                    sessionCount += 1
+                    Log.d(TAG, "New Session number: " + sessionCount)
+                    var countOutStream = FileOutputStream(sessionInfoFile)
+                    countOutStream.write(sessionCount.toString().toByteArray())
+                    lastSessionFinished = true
+                }
+                else {
+                    Log.d(TAG, "Continuing last session")
+                }
+
+
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        if(lastSessionFinished) {
+            sessionFileName = "session_" + sessionCount + ".txt"    // create file for current session
+            sessionFile = File(filesDir.absolutePath, sessionFileName)
+            sessionOut = FileOutputStream(sessionFile)
+
+            val current = LocalDateTime.now()
+
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+            val formatted = current.format(formatter)
+            Log.d(TAG, formatted)
+            var sessionLine = "session" + "(" + sessionCount + "," + formatted + ")" + "\n"
+            sessionOut!!.write(sessionLine.toByteArray())
+        }
+
+
+
+
+        super.onStart()
+    }
 
     /*
      * Handling raw data
@@ -456,6 +542,27 @@ class TrainingActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    public override fun onStop() {
+        if(dataReceived) {
+            var sessionLine = "session_info" + "(" + sessionCount + ")" + "\n"
+            sessionOut!!.write(sessionLine.toByteArray())
+            var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
+            var countOutStream = FileOutputStream(sessionInfoFile)
+            var outString = sessionCount.toString() + "\n"
+            var receivedLine = "0"
+            countOutStream.write(outString.toByteArray())
+            countOutStream.write(receivedLine.toByteArray())
+        }
+        else{
+            var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
+            var countOutStream = FileOutputStream(sessionInfoFile)
+            var outString = sessionCount.toString() + "\n"
+            var receivedLine = "1"
+            countOutStream.write(outString.toByteArray())
+            countOutStream.write(receivedLine.toByteArray())
+        }
+        super.onStop()
+    }
     public override fun onResume() {
         super.onResume()
         api.foregroundEntered()
