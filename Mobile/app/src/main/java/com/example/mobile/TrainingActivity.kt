@@ -33,6 +33,7 @@ import java.io.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 class TrainingActivity : AppCompatActivity() {
@@ -283,20 +284,18 @@ class TrainingActivity : AppCompatActivity() {
          */
         movementButton.setOnClickListener {
             val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
-
+            var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
 
-                sessionFile = File(filesDir.absolutePath, sessionFileName)
-                sessionOut = FileOutputStream(sessionFile)
+                //sessionFile = File(filesDir.absolutePath, sessionFileName)
+                //sessionOut = FileOutputStream(sessionFile)
                 ++roundNumber
-                var roundStartLine = "round" + "(" + roundNumber + ")" + "\n"
+                var roundStartLine = "round," + roundNumber + "\n"
                 sessionOut!!.write(roundStartLine.toByteArray())
-
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
-
                 showCountdown(textViewCountdown1, textViewCountdown2)
 
                 Thread {
@@ -316,10 +315,10 @@ class TrainingActivity : AppCompatActivity() {
                                             player.start()
                                             textViewSpeed.visibility = TextView.VISIBLE
                                             textViewSpeed.text = getString(R.string.speed, result.first.toString())
-                                            var punchString = "punch(" + result.first.toString() + "," + result.second.toString() + ")"
+                                            var punchString = "punch," + result.first.toString() + "," + result.second.toString() +"\n"
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
-                                            //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                            punches.add(result)
                                         }
                                     }
                                 },
@@ -338,7 +337,19 @@ class TrainingActivity : AppCompatActivity() {
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
                 if(dataReceived) {
-                    var roundEndLine = "round_info" + "(" + roundNumber + "," + "10.0)" + "\n"
+                    var totalPunches = punches.size
+                    var correctPunches = 0
+                    var avgSpeed = 0.0
+                    for(i in punches){
+                        if(i.second)
+                            ++correctPunches
+                        avgSpeed += i.first
+                    }
+                    avgSpeed /= totalPunches
+                    var avgHeartRate = 0.0
+                    var incorrectPunches = totalPunches - correctPunches
+                    var roundLength = 1.0
+                    var roundEndLine = "round_info," + roundNumber + "," + roundLength + "," + totalPunches + "," + correctPunches + "," + incorrectPunches + "," + avgHeartRate + "," + avgSpeed + "\n"
                     sessionOut!!.write(roundEndLine.toByteArray())
                 }
 
@@ -397,20 +408,19 @@ class TrainingActivity : AppCompatActivity() {
 
     }   // onCreate end
 
-    @RequiresApi(Build.VERSION_CODES.O)
+
     override fun onStart() {
-        var lastSessionFinished = false
         var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
-        val isCreated :Boolean = sessionInfoFile.createNewFile()
-        if (isCreated) {
+        val sessionInfoCreated :Boolean = sessionInfoFile.createNewFile()
+        var currentSessionID = 0
+        if (sessionInfoCreated) {
             Log.d(TAG, "No sessions yet")
             sessionCount = 1
-            var outString = sessionCount.toString() + "\n"
-            var finishedLine = 0
+            currentSessionID = sessionCount
+            ++sessionCount
+            var outString = sessionCount.toString()
             var countOutStream = FileOutputStream(sessionInfoFile)
             countOutStream.write(outString.toByteArray())
-            countOutStream.write(finishedLine.toString().toByteArray())
-            lastSessionFinished = true
         }
         else {
             var countInStream = openFileInput(sessionsInfoFileName)
@@ -418,42 +428,23 @@ class TrainingActivity : AppCompatActivity() {
             val bufferedReader = BufferedReader(inputStreamReader)
             try {
                 sessionCount = Integer.parseInt(bufferedReader.readLine())
-                var continueSession = Integer.parseInt(bufferedReader.readLine())
-                Log.d(TAG, "ContinueSession: " + continueSession)
-                if (continueSession == 0) {
-                    Log.d(TAG, "Old Session number: " + sessionCount)
-                    sessionCount += 1
-                    Log.d(TAG, "New Session number: " + sessionCount)
-                    var countOutStream = FileOutputStream(sessionInfoFile)
-                    countOutStream.write(sessionCount.toString().toByteArray())
-                    lastSessionFinished = true
-                }
-                else {
-                    Log.d(TAG, "Continuing last session")
-                }
-
-
+                currentSessionID = sessionCount
+                ++sessionCount
+                Log.d(TAG, "Session number: " + sessionCount)
+                var countOutStream = FileOutputStream(sessionInfoFile)
+                countOutStream.write(sessionCount.toString().toByteArray())
             } catch (e: Exception) {
                 Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
-        if(lastSessionFinished) {
-            sessionFileName = "session_" + sessionCount + ".txt"    // create file for current session
-            sessionFile = File(filesDir.absolutePath, sessionFileName)
-            sessionOut = FileOutputStream(sessionFile)
 
-            val current = LocalDateTime.now()
+        sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
+        sessionFile = File(filesDir.absolutePath, sessionFileName)
+        sessionOut = FileOutputStream(sessionFile)
 
-            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-            val formatted = current.format(formatter)
-            Log.d(TAG, formatted)
-            var sessionLine = "session" + "(" + sessionCount + "," + formatted + ")" + "\n"
-            sessionOut!!.write(sessionLine.toByteArray())
-        }
-
-
-
-
+        Log.d(TAG, "Creating SessionFile")
+        var sessionLine = "session," + currentSessionID + "," + Date() + "\n"
+        sessionOut!!.write(sessionLine.toByteArray())
         super.onStart()
     }
 
@@ -542,24 +533,20 @@ class TrainingActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     public override fun onStop() {
         if(dataReceived) {
-            var sessionLine = "session_info" + "(" + sessionCount + ")" + "\n"
+            var currentSession = sessionCount - 1
+            var sessionLine = "session_info," + currentSession +"\n"
             sessionOut!!.write(sessionLine.toByteArray())
-            var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
-            var countOutStream = FileOutputStream(sessionInfoFile)
-            var outString = sessionCount.toString() + "\n"
-            var receivedLine = "0"
-            countOutStream.write(outString.toByteArray())
-            countOutStream.write(receivedLine.toByteArray())
         }
         else{
             var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
             var countOutStream = FileOutputStream(sessionInfoFile)
-            var outString = sessionCount.toString() + "\n"
-            var receivedLine = "1"
-            countOutStream.write(outString.toByteArray())
-            countOutStream.write(receivedLine.toByteArray())
+            if(sessionCount > 1) {
+                --sessionCount
+            }
+            countOutStream.write(sessionCount.toString().toByteArray())
         }
         super.onStop()
     }

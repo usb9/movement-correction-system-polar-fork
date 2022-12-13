@@ -251,7 +251,7 @@ public class PunchAnalyzer {
 
         if(startIndex == -1 || endIndex == -1 || startIndex >= endIndex) {
             Log.d(TAG, "Speed calculation: Index not found!");
-            return null;
+            return 1.0;
         }
 
         // ------ speed calculation     ------
