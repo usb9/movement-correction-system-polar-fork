@@ -69,6 +69,13 @@ class SignUpActivity : AppCompatActivity() {
                     Log.d("TAG", "createUserWithEmail:success")
                     val user = auth.currentUser
 
+                    //DISPLAY EMAIL
+//                    val displayUsername = emailText.text.toString()
+//                    Intent (this, HomeActivity::class.java).also {
+//                        it.putExtra ("DISPLAY_EMAIL", displayUsername)
+//                        startActivity(it)
+//                    }
+
 
                     user?.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(username).build())
                     updateUI()
