@@ -14,7 +14,8 @@
     <string name="scanning_devices">stop device scan</string>
     <string name="end_training">end training</string>
     <string name="punch_result">My punch is: ?</string>
-    <string name="speed">My speed is: %s</string>
+    <string name="speed">My speed is: %s km/h</string>
+    <string name="hr">My heart rate is: %s BPM</string>
     <string name="show_the_number_of_sensor">Found %s sensors</string>
 
     <string-array name="device_id_array">

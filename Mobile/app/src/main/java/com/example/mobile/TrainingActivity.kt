@@ -23,6 +23,7 @@ import com.polar.sdk.api.PolarBleApiDefaultImpl
 import com.polar.sdk.api.errors.PolarInvalidArgument
 import com.polar.sdk.api.model.PolarAccelerometerData
 import com.polar.sdk.api.model.PolarDeviceInfo
+import com.polar.sdk.api.model.PolarHrData
 import com.polar.sdk.api.model.PolarSensorSetting
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
@@ -30,6 +31,7 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.io.*
+import java.text.DecimalFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -61,13 +63,13 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
     private lateinit var endTrainingButton: Button
-    private lateinit var textViewAccX: TextView
+    //private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
     private lateinit var imageViewBatteryLevel: ImageView
-    private lateinit var textViewPunchResult: TextView
+    //private lateinit var textViewPunchResult: TextView
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
-
+    private lateinit var textViewHr: TextView
 
     private var sessionsInfoFileName: String = "session_count.txt"
     //private var sessionCountFile: File? = null
@@ -88,6 +90,8 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewCountdown1: TextView
     private lateinit var textViewCountdown2: TextView
 
+    private var heartRate: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
@@ -96,11 +100,12 @@ class TrainingActivity : AppCompatActivity() {
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
         endTrainingButton = findViewById(R.id.end_training_button)
-        textViewAccX = findViewById(R.id.view_acc_X)
+        //textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
         imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
-        textViewPunchResult = findViewById(R.id.view_punch_result)
+        //textViewPunchResult = findViewById(R.id.view_punch_result)
         textViewSpeed = findViewById(R.id.view_speed)
+        textViewHr = findViewById(R.id.view_hr)
         backNavigation = findViewById(R.id.training_nav_bar)
         textViewCountdown1 = findViewById(R.id.view_countdown_1)
         textViewCountdown2 = findViewById(R.id.view_countdown_2)
@@ -245,6 +250,12 @@ class TrainingActivity : AppCompatActivity() {
                 }
             }
 
+            // update hr data
+            override fun hrNotificationReceived(identifier: String, data: PolarHrData) {
+                //Log.d(TAG, "HR -----------------------" + data.hr)
+                heartRate = data.hr
+            }
+
             // works only with oh10 anyways
             override fun polarFtpFeatureReady(s: String) {
                 Log.d(TAG, "FTP ready")
@@ -287,7 +298,7 @@ class TrainingActivity : AppCompatActivity() {
             var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
-                textViewPunchResult.visibility = TextView.INVISIBLE
+                //textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
 
                 //sessionFile = File(filesDir.absolutePath, sessionFileName)
@@ -312,9 +323,13 @@ class TrainingActivity : AppCompatActivity() {
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
                                             Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            textViewHr.text = getString(R.string.hr, heartRate.toString())
                                             player.start()
+
                                             textViewSpeed.visibility = TextView.VISIBLE
-                                            textViewSpeed.text = getString(R.string.speed, result.first.toString())
+
+                                            val df = DecimalFormat("#.#")
+                                            textViewSpeed.text = getString(R.string.speed, df.format(result.first).toString())
                                             var punchString = "punch," + result.first.toString() + "," + result.second.toString() +"\n"
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
