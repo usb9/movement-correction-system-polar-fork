@@ -17,6 +17,7 @@
     <string name="speed">My speed is: %s km/h</string>
     <string name="hr">My heart rate is: %s BPM</string>
     <string name="show_the_number_of_sensor">Found %s sensors</string>
+    <string name="round_times">(Round %s)</string>
 
     <string-array name="device_id_array">
         <item>id1</item>

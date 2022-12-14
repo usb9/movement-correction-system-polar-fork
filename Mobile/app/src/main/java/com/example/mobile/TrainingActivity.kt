@@ -70,6 +70,7 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
     private lateinit var textViewHr: TextView
+    private lateinit var roundTimes: TextView
 
     private var sessionsInfoFileName: String = "session_count.txt"
     //private var sessionCountFile: File? = null
@@ -109,6 +110,8 @@ class TrainingActivity : AppCompatActivity() {
         backNavigation = findViewById(R.id.training_nav_bar)
         textViewCountdown1 = findViewById(R.id.view_countdown_1)
         textViewCountdown2 = findViewById(R.id.view_countdown_2)
+        roundTimes = findViewById(R.id.view_round)
+        roundTimes.text = "(Round times)"
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -309,6 +312,8 @@ class TrainingActivity : AppCompatActivity() {
                 var roundStartLine = "round," + roundNumber + "\n"
                 sessionOut!!.write(roundStartLine.toByteArray())
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
+
+                roundTimes.text = getString(R.string.round_times, roundNumber.toString())
 
                 showCountdown(textViewCountdown1, textViewCountdown2)
 
