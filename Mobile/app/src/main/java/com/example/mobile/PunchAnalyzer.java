@@ -36,9 +36,9 @@ public class PunchAnalyzer {
     private int identificationCount = 0;
 
     // x value thresholds for registering punches and arm drops
-    private final static double X_PUNCH_THRESHOLD = 75.0;
+    private final static double X_PUNCH_THRESHOLD = 100.0;
     private final static double X_MISTAKE_THRESHOLD = -20.0;
-    private final static double START_THRESHOLD = - 12.0;
+    private final static double START_THRESHOLD = - 15.0;
 
     private int range;
     private static final int LOW_RANGE = 8;
@@ -110,6 +110,7 @@ public class PunchAnalyzer {
 
 
     public void setRange(int Range) throws IllegalArgumentException{
+
         if(Range == LOW_RANGE) {
             range = Range;
             Log.d(TAG, "using Range +-" + LOW_RANGE);
@@ -139,18 +140,11 @@ public class PunchAnalyzer {
         verticalDirection *= MILLI_G_TO_METER_PER_SQUARE_SECOND;
 
         double meanSquareRoot = Math.sqrt((((punchDirection * punchDirection) + (wristRotationDirection * wristRotationDirection) + (verticalDirection * verticalDirection)) / 3.0));
-        //double XYRootMeanSquare = Math.sqrt((((punchDirection * punchDirection) + (wristRotationDirection * wristRotationDirection))  / 2.0));
 
-        //Log.d(TAG, "Next: adding new values...");
         xValueBuffer.add(punchDirection);       // new element at the end,
         xValueBuffer.remove(0);              // oldest element removed
         RootMeanSquareBuffer.add(meanSquareRoot);
         RootMeanSquareBuffer.remove(0);
-
-        //XYBuffer.add(XYRootMeanSquare);
-        //XYBuffer.remove(0);
-
-        //Log.d(TAG, "Next: values added");
 
         return analyzeX(punchDirection);
     }
@@ -258,13 +252,11 @@ public class PunchAnalyzer {
 
         double speedRMS = 0;
 
-        for (int i = startIndex; i <= endIndex; ++i) {
+        for (int i = startIndex; i < endIndex; ++i) {
             speedRMS += (frameLengthInMs * RootMeanSquareBuffer.get(i));
-            if (i < endIndex - 2) {
-                speedRMS += ((frameLengthInMs * RootMeanSquareBuffer.get(i)
-                        - RootMeanSquareBuffer.get(i + 1)) / 2.0);
-            }
-            else {
+            speedRMS += (Math.abs(frameLengthInMs * (RootMeanSquareBuffer.get(i)
+                    - RootMeanSquareBuffer.get(i + 1))) / 2.0);
+            if(i == endIndex - 1) {
                 speedRMS += (((frameLengthInMs / 2.0) * RootMeanSquareBuffer.get(i)) / 2.0);
             }
         }
