@@ -4,46 +4,155 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".HomeActivity">
+    tools:context=".HomeActivity"
+    android:background="#3B3C32">
+
+    <ImageView
+        android:id="@+id/imageView_wave_top"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@drawable/wave_top"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/man_boxing_icon"
+        android:backgroundTint="#AEE141"
+        android:backgroundTintMode="multiply"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.948"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/imageView_wave_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@drawable/wave_bottom"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/help_button"
-        android:layout_width="154dp"
-        android:layout_height="51dp"
-        android:layout_marginEnd="68dp"
-        android:layout_marginBottom="140dp"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="196dp"
         android:text="Help"
-        app:layout_constraintBottom_toTopOf="@+id/setting_button"
-        app:layout_constraintEnd_toEndOf="@+id/setting_button" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#3B3C32"
+        app:cornerRadius="10dp"
+        android:backgroundTint="#C3FF45"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/training_button"
+        app:layout_constraintVertical_bias="0.052" />
 
     <Button
         android:id="@+id/training_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="91dp"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="200dp"
         android:text="Start Training"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#3B3C32"
+        app:cornerRadius="10dp"
+        android:backgroundTint="#C3FF45"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/imageView_wave_top" />
 
     <Button
         android:id="@+id/statics_button"
-        android:layout_width="158dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="252dp"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
         android:text="Statics"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#3B3C32"
+        app:cornerRadius="10dp"
+        android:backgroundTint="#C3FF45"
+        app:layout_constraintBottom_toTopOf="@+id/setting_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.517"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/training_button"
+        app:layout_constraintVertical_bias="0.541" />
 
     <Button
         android:id="@+id/setting_button"
-        android:layout_width="295dp"
-        android:layout_height="42dp"
-        android:layout_marginTop="360dp"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:backgroundTint="#C3FF45"
+        android:elevation="8dp"
         android:text="Settings"
+        android:textColor="#3B3C32"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:cornerRadius="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/help_button"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/training_button"
+        app:layout_constraintVertical_bias="0.804" />
+
+    <LinearLayout
+        android:id="@+id/slogan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.115"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/imageView_wave_bottom"
+        app:layout_constraintVertical_bias="0.851">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:fontFamily="@font/arbutus"
+            android:text="Let's train with us"
+            android:textColor="#3B3C32"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:elevation="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.062"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.929" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/arbutus"
+            android:layout_marginLeft="30dp"
+            android:text="Unleash your power !"
+            android:textColor="#3B3C32"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:elevation="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.062"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.929" />
+    </LinearLayout>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

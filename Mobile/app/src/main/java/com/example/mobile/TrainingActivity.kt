@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
@@ -29,7 +30,10 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.io.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 class TrainingActivity : AppCompatActivity() {
@@ -64,13 +68,22 @@ class TrainingActivity : AppCompatActivity() {
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
 
-    // Session File
-    private val fname: String = "current_session.csv"
-    private var file: File? = null
+
+    private var sessionsInfoFileName: String = "session_count.txt"
+    //private var sessionCountFile: File? = null
+    private var sessionCount = 0
+
+    private var roundNumber = 0
+    private var dataReceived = false
     private var fos: FileOutputStream? = null
+    private var sessionFileName: String? = null
+    private var sessionFile: File? = null
+    private var sessionOut: FileOutputStream? = null
     private var sampleRate = 26 // Handling raw data in file - in Hz
     private var range = 8;
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
+    private var punchID = 1
+    var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
 
     // Latency
     private val timeResponse = 7000
@@ -96,9 +109,6 @@ class TrainingActivity : AppCompatActivity() {
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
-        file = File(filesDir.absolutePath, fname)
-        fos = FileOutputStream(file)
-
         /*
          * get deviceId from MyDevicesId.txt
          */
@@ -120,6 +130,8 @@ class TrainingActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
+
+
 
 
         /*
@@ -279,8 +291,12 @@ class TrainingActivity : AppCompatActivity() {
                 textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
 
+                //sessionFile = File(filesDir.absolutePath, sessionFileName)
+                //sessionOut = FileOutputStream(sessionFile)
+                ++roundNumber
+                var roundStartLine = "round," + roundNumber + "\n"
+                sessionOut!!.write(roundStartLine.toByteArray())
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
-
                 showCountdown(textViewCountdown1, textViewCountdown2)
 
                 Thread {
@@ -292,16 +308,24 @@ class TrainingActivity : AppCompatActivity() {
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
+
                                     for (data in polarAccelerometerData.samples) {
+
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
-
                                             Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
-                                            textViewSpeed.visibility = TextView.VISIBLE
-                                            textViewSpeed.text = getString(R.string.speed,  result.first.toString())
+                                            Log.d(TAG, "Calculated punch velocity: $punchID")
+
                                             player.start()
-                                            //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
+                                            textViewSpeed.visibility = TextView.VISIBLE
+                                            textViewSpeed.text = getString(R.string.speed, result.first.toString())
+                                            var punchString = "punch,"+ punchID +","  + result.second.toString() + "," + result.first.toString() +"\n"
+
+                                            sessionOut!!.write(punchString.toByteArray())
+                                            dataReceived = true
+                                            punches.add(result)
+                                            punchID= punchID + 1
                                         }
                                     }
                                 },
@@ -319,6 +343,29 @@ class TrainingActivity : AppCompatActivity() {
                 toggleButtonUp(movementButton, R.string.start_movement_stream)
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
+                if(dataReceived) {
+                    Log.e("PUNCHES",punches.toString())
+                    var totalPunches = punches.size
+                    var correctPunches = 0
+                    var avgSpeed = 0.0
+                    for(i in punches){
+                        println(i)
+                        if(i.second)
+                            ++correctPunches
+                        avgSpeed += i.first
+                    }
+                    avgSpeed /= totalPunches
+                    var avgHeartRate = 0.0
+                    var incorrectPunches = totalPunches - correctPunches
+                    var roundLength = 1.0
+                    var roundEndLine = "round_info," + roundNumber + "," + roundLength + "," + totalPunches + "," + correctPunches + "," + incorrectPunches + "," + avgHeartRate + "," + avgSpeed + "\n"
+
+                    sessionOut!!.write(roundEndLine.toByteArray())
+                    punchID = 1
+                    punches  = ArrayList()
+
+                }
+
 
                 // Punch analyzing
 /*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
@@ -373,6 +420,46 @@ class TrainingActivity : AppCompatActivity() {
         }
 
     }   // onCreate end
+
+
+    override fun onStart() {
+        var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
+        val sessionInfoCreated :Boolean = sessionInfoFile.createNewFile()
+        var currentSessionID = 0
+        if (sessionInfoCreated) {
+            Log.d(TAG, "No sessions yet")
+            sessionCount = 1
+            currentSessionID = sessionCount
+            ++sessionCount
+            var outString = sessionCount.toString()
+            var countOutStream = FileOutputStream(sessionInfoFile)
+            countOutStream.write(outString.toByteArray())
+        }
+        else {
+            var countInStream = openFileInput(sessionsInfoFileName)
+            var inputStreamReader = InputStreamReader(countInStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+            try {
+                sessionCount = Integer.parseInt(bufferedReader.readLine())
+                currentSessionID = sessionCount
+                ++sessionCount
+                Log.d(TAG, "Session number: " + sessionCount)
+                var countOutStream = FileOutputStream(sessionInfoFile)
+                countOutStream.write(sessionCount.toString().toByteArray())
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
+        sessionFile = File(filesDir.absolutePath, sessionFileName)
+        sessionOut = FileOutputStream(sessionFile)
+
+        Log.d(TAG, "Creating SessionFile")
+        var sessionLine = "training," + currentSessionID + "," + Date() + "\n"
+        sessionOut!!.write(sessionLine.toByteArray())
+        super.onStart()
+    }
 
     /*
      * Handling raw data
@@ -459,6 +546,23 @@ class TrainingActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    public override fun onStop() {
+        if(dataReceived) {
+            var currentSession = sessionCount - 1
+//            var sessionLine = "session_info," + currentSession +"\n"
+//            sessionOut!!.write(sessionLine.toByteArray())
+        }
+        else{
+            var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
+            var countOutStream = FileOutputStream(sessionInfoFile)
+            if(sessionCount > 1) {
+                --sessionCount
+            }
+            countOutStream.write(sessionCount.toString().toByteArray())
+        }
+        super.onStop()
+    }
     public override fun onResume() {
         super.onResume()
         api.foregroundEntered()
