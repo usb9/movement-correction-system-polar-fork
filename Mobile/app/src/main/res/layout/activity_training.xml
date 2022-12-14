@@ -66,53 +66,53 @@
         android:id="@+id/view_round"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:textAlignment="center"
         android:textColor="@color/green_font"
         android:textSize="26dp"
         android:textStyle="bold"
-        android:layout_marginTop="40dp"
-        app:layout_constraintTop_toBottomOf="@id/connect_button"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="(Round Time)" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/connect_button"
+        tools:text="@string/round_times" />
 
     <Button
         android:id="@+id/movement_button"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="60dp"
         android:text="@string/start_movement_stream"
         app:cornerRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/connect_button" />
 
-    <TextView
-        android:id="@+id/view_acc_X"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        android:textColor="#C00000"
-        android:textSize="30sp"
-        android:layout_marginBottom="100dp"
-        app:layout_constraintBottom_toTopOf="@id/end_training_button"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:text="100" />
+<!--    <TextView-->
+<!--        android:id="@+id/view_acc_X"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textAlignment="center"-->
+<!--        android:textColor="#C00000"-->
+<!--        android:textSize="30sp"-->
+<!--        android:layout_marginBottom="100dp"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/end_training_button"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        tools:text="100" />-->
 
-    <TextView
-        android:id="@+id/view_punch_result"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        android:textColor="@color/green_font"
-        android:textSize="30sp"
-        android:layout_marginTop="20dp"
-        app:layout_constraintTop_toBottomOf="@id/movement_button"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:text="@string/punch_result" />
+<!--    <TextView-->
+<!--        android:id="@+id/view_punch_result"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textAlignment="center"-->
+<!--        android:textColor="@color/green_font"-->
+<!--        android:textSize="30sp"-->
+<!--        android:layout_marginTop="20dp"-->
+<!--        app:layout_constraintTop_toBottomOf="@id/movement_button"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        tools:text="@string/punch_result" />-->
 
     <TextView
         android:id="@+id/view_speed"
@@ -120,12 +120,25 @@
         android:layout_height="wrap_content"
         android:textAlignment="center"
         android:textColor="@color/green_font"
-        android:textSize="30sp"
+        android:textSize="28dp"
         android:layout_marginTop="10dp"
-        app:layout_constraintTop_toBottomOf="@id/view_punch_result"
+        app:layout_constraintTop_toBottomOf="@id/movement_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="@string/speed" />
+
+    <TextView
+        android:id="@+id/view_hr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textColor="@color/green_font"
+        android:textSize="28sp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/view_speed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="@string/hr" />
 
     <TextView
         android:id="@+id/view_countdown_1"
@@ -144,24 +157,56 @@
 
     <TextView
         android:id="@+id/view_countdown_2"
-        android:visibility="invisible"
         android:layout_width="280dp"
         android:layout_height="wrap_content"
+        android:background="#cacacf"
         android:textAlignment="center"
         android:textColor="@color/black_font"
-        android:background="#cacacf"
         android:textSize="60sp"
-        app:layout_constraintTop_toBottomOf="@id/view_countdown_1"
-        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/movement_button"
         tools:text="9" />
+
+    <com.androidplot.xy.XYPlot
+        android:id="@+id/view_plot"
+        style="@style/FullScreenGraph"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        app:backgroundColor="@color/colorAccent"
+        app:domainTitle="@string/domain_title"
+        app:domainTitleTextColor="@android:color/black"
+        app:domainTitleTextSize="12dp"
+        app:graphBackgroundColor="@color/colorAccent"
+        app:graphMarginBottom="20dp"
+        app:graphMarginLeft="26dp"
+        app:graphMarginRight="10dp"
+        app:graphMarginTop="20dp"
+        app:gridBackgroundColor="@color/colorAccent"
+        app:gridInsetLeft="25dp"
+        app:layout_constraintBottom_toTopOf="@id/end_training_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/view_hr"
+        app:layout_constraintVertical_bias="0.066"
+        app:lineLabels="left|bottom"
+        app:rangeTitle="@string/range_title"
+        app:rangeTitleTextColor="@android:color/black"
+        app:rangeTitleTextSize="12dp"
+        app:renderMode="use_background_thread"
+        app:title="@string/title"
+        app:titleTextColor="@android:color/black"
+        app:titleTextSize="16dp" />
 
     <Button
         android:id="@+id/end_training_button"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginBottom="30dp"
+        android:layout_marginBottom="20dp"
         android:text="@string/end_training"
         app:cornerRadius="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
