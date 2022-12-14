@@ -296,7 +296,10 @@ class TrainingActivity : AppCompatActivity() {
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
+
                                             Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            textViewSpeed.visibility = TextView.VISIBLE
+                                            textViewSpeed.text = getString(R.string.speed,  result.first.toString())
                                             player.start()
                                             //fos!!.write("${data.x.toString()},${data.y.toString()},${data.z.toString()}\n".toByteArray())       // write acc data to current_session.csv
                                         }
