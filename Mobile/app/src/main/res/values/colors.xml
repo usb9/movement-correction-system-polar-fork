@@ -19,4 +19,6 @@
     <color name="green_font">#E5FF7C</color>
 
     <color name="gray_button_ground">#888B6D</color>
+
+    <color name="colorAccent">#FDFDFD</color>
 </resources>

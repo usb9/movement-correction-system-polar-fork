@@ -40,4 +40,9 @@
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
+
+    <!--  graph  -->
+    <string name="title">My round</string>
+    <string name="range_title">Speed and heart rate</string>
+    <string name="domain_title">Times</string>
 </resources>

@@ -17,6 +17,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
+import com.androidplot.xy.*
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
@@ -140,37 +141,46 @@ class TrainingActivity : AppCompatActivity() {
 
 
 
-        /*
-         * decide whether endTrainingButton is visible or invisible
-         */
-        var noNeedAccount: Boolean = false
+//        /*
+//         * decide whether endTrainingButton is visible or invisible
+//         */
+//        var noNeedAccount: Boolean = false
+//
+//        try {
+//            var fin: FileInputStream? = null
+//            fin = openFileInput("DoINeedAccount.txt")
+//            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+//            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+//
+//            val stringBuilder: StringBuilder = StringBuilder()
+//            var text: String? = null
+//            while (run {
+//                    text = bufferedReader.readLine()
+//                    text
+//                } != null) {
+//                stringBuilder.append(text)
+//                text?.let {
+//                    noNeedAccount = it.contains("no")
+//                }
+//            }
+//        } catch (ex: Exception) {
+//            if (ex.message?.contains("No such file or directory") == true) {
+//                noNeedAccount = false
+//            }
+//        }
+//
+//        if (noNeedAccount) {
+//            endTrainingButton.visibility = Button.INVISIBLE
+//        }
 
-        try {
-            var fin: FileInputStream? = null
-            fin = openFileInput("DoINeedAccount.txt")
-            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
-            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+        // graph
+        var plot: XYPlot = findViewById(R.id.view_plot)
+        val seriesSpeedFormat = BarFormatter(Color.BLUE, Color.GRAY)
+        val seriesHrFormat = BarFormatter(Color.RED, Color.GRAY)
 
-            val stringBuilder: StringBuilder = StringBuilder()
-            var text: String? = null
-            while (run {
-                    text = bufferedReader.readLine()
-                    text
-                } != null) {
-                stringBuilder.append(text)
-                text?.let {
-                    noNeedAccount = it.contains("no")
-                }
-            }
-        } catch (ex: Exception) {
-            if (ex.message?.contains("No such file or directory") == true) {
-                noNeedAccount = false
-            }
-        }
-
-        if (noNeedAccount) {
-            endTrainingButton.visibility = Button.INVISIBLE
-        }
+        val tVals = mutableListOf(0)
+        val speedVals = mutableListOf(0)
+        val hrVals = mutableListOf(0)
 
         /*
          * All ble devices discoverable by searchForDevice, api logging enabled
@@ -342,6 +352,23 @@ class TrainingActivity : AppCompatActivity() {
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
                                             punches.add(result)
+
+                                            // Graph
+                                            speedVals.add(result.first.toInt())
+                                            hrVals.add(heartRate)
+
+                                            plot.clear()
+                                            val seriesSpeed: XYSeries = SimpleXYSeries(speedVals, SimpleXYSeries.ArrayFormat.Y_VALS_ONLY, "speed - km/h")
+                                            val seriesHr: XYSeries = SimpleXYSeries(hrVals, SimpleXYSeries.ArrayFormat.Y_VALS_ONLY,"heart rate - BPM")
+                                            plot.addSeries(seriesSpeed, seriesSpeedFormat)
+                                            plot.addSeries(seriesHr, seriesHrFormat)
+
+                                            plot.setRangeStep(StepMode.INCREMENT_BY_VAL, 10.0)
+                                            plot.setDomainStep(StepMode.INCREMENT_BY_VAL, 1.0)
+//                                            plot.setRangeBoundaries(0,120,BoundaryMode.FIXED)
+//                                            plot.setDomainBoundaries(0,30,BoundaryMode.FIXED)
+
+                                            plot.redraw()
                                         }
                                     }
                                 },
