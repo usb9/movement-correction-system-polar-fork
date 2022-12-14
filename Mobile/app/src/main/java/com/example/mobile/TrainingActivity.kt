@@ -17,12 +17,14 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
+import com.androidplot.xy.*
 import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallback
 import com.polar.sdk.api.PolarBleApiDefaultImpl
 import com.polar.sdk.api.errors.PolarInvalidArgument
 import com.polar.sdk.api.model.PolarAccelerometerData
 import com.polar.sdk.api.model.PolarDeviceInfo
+import com.polar.sdk.api.model.PolarHrData
 import com.polar.sdk.api.model.PolarSensorSetting
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
@@ -30,6 +32,7 @@ import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.functions.Function
 import java.io.*
+import java.text.DecimalFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -52,22 +55,26 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private var movementDisposable: Disposable? = null
-
+    private var sdkModeEnableDisposable: Disposable? = null
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
-    private val MINIMUM_SPEED = 10.0
+    private val SAMPLE_RATE = 52
+    private val RANGE = 16
+    private val MINIMUM_SPEED = 12.0
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
     private lateinit var endTrainingButton: Button
-    private lateinit var textViewAccX: TextView
+    //private lateinit var textViewAccX: TextView
     private lateinit var textViewBattery: TextView
     private lateinit var imageViewBatteryLevel: ImageView
-    private lateinit var textViewPunchResult: TextView
+    //private lateinit var textViewPunchResult: TextView
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
 
+    private lateinit var textViewHr: TextView
+    private lateinit var roundTimes: TextView
 
     private var sessionsInfoFileName: String = "session_count.txt"
     //private var sessionCountFile: File? = null
@@ -79,31 +86,44 @@ class TrainingActivity : AppCompatActivity() {
     private var sessionFileName: String? = null
     private var sessionFile: File? = null
     private var sessionOut: FileOutputStream? = null
-    private var sampleRate = 26 // Handling raw data in file - in Hz
-    private var range = 8;
-    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
+
+    //private var sampleRate = 26 // Handling raw data in file - in Hz
+    //private var range = 8;
+    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(SAMPLE_RATE, RANGE)
+    private var punchID = 1
+    private var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
+    private val firebaseHandler = FirebaseHandler()
 
     // Latency
-    private val timeResponse = 7000
+    //private val timeResponse = 7000
     private lateinit var textViewCountdown1: TextView
     private lateinit var textViewCountdown2: TextView
+
+    private var heartRate: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
 
+
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
         endTrainingButton = findViewById(R.id.end_training_button)
-        textViewAccX = findViewById(R.id.view_acc_X)
+        //textViewAccX = findViewById(R.id.view_acc_X)
         textViewBattery = findViewById(R.id.view_battery)
         imageViewBatteryLevel = findViewById(R.id.ic_battery_level)
-        textViewPunchResult = findViewById(R.id.view_punch_result)
+        //textViewPunchResult = findViewById(R.id.view_punch_result)
         textViewSpeed = findViewById(R.id.view_speed)
+        textViewHr = findViewById(R.id.view_hr)
         backNavigation = findViewById(R.id.training_nav_bar)
         textViewCountdown1 = findViewById(R.id.view_countdown_1)
         textViewCountdown2 = findViewById(R.id.view_countdown_2)
+        roundTimes = findViewById(R.id.view_round)
+        roundTimes.text = "(Round times)"
+
+
+
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -129,40 +149,46 @@ class TrainingActivity : AppCompatActivity() {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
 
+//        /*
+//         * decide whether endTrainingButton is visible or invisible
+//         */
+//        var noNeedAccount: Boolean = false
+//
+//        try {
+//            var fin: FileInputStream? = null
+//            fin = openFileInput("DoINeedAccount.txt")
+//            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+//            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+//
+//            val stringBuilder: StringBuilder = StringBuilder()
+//            var text: String? = null
+//            while (run {
+//                    text = bufferedReader.readLine()
+//                    text
+//                } != null) {
+//                stringBuilder.append(text)
+//                text?.let {
+//                    noNeedAccount = it.contains("no")
+//                }
+//            }
+//        } catch (ex: Exception) {
+//            if (ex.message?.contains("No such file or directory") == true) {
+//                noNeedAccount = false
+//            }
+//        }
+//
+//        if (noNeedAccount) {
+//            endTrainingButton.visibility = Button.INVISIBLE
+//        }
 
+        // graph
+        var plot: XYPlot = findViewById(R.id.view_plot)
+        val seriesSpeedFormat = BarFormatter(Color.BLUE, Color.GRAY)
+        val seriesHrFormat = BarFormatter(Color.RED, Color.GRAY)
 
-
-        /*
-         * decide whether endTrainingButton is visible or invisible
-         */
-        var noNeedAccount: Boolean = false
-
-        try {
-            var fin: FileInputStream? = null
-            fin = openFileInput("DoINeedAccount.txt")
-            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
-            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
-
-            val stringBuilder: StringBuilder = StringBuilder()
-            var text: String? = null
-            while (run {
-                    text = bufferedReader.readLine()
-                    text
-                } != null) {
-                stringBuilder.append(text)
-                text?.let {
-                    noNeedAccount = it.contains("no")
-                }
-            }
-        } catch (ex: Exception) {
-            if (ex.message?.contains("No such file or directory") == true) {
-                noNeedAccount = false
-            }
-        }
-
-        if (noNeedAccount) {
-            endTrainingButton.visibility = Button.INVISIBLE
-        }
+        val tVals = mutableListOf(0)
+        val speedVals = mutableListOf(0)
+        val hrVals = mutableListOf(0)
 
         /*
          * All ble devices discoverable by searchForDevice, api logging enabled
@@ -189,8 +215,11 @@ class TrainingActivity : AppCompatActivity() {
                 Log.d(TAG, "CONNECTED: " + polarDeviceInfo.deviceId)
                 deviceId = polarDeviceInfo.deviceId
                 deviceConnected = true
+
+
                 val buttonText = getString(R.string.disconnect_from_device, deviceId)
                 toggleButtonDown(connectButton, buttonText)
+
             }
 
             // only logging
@@ -213,6 +242,22 @@ class TrainingActivity : AppCompatActivity() {
                 for (feature in features) {
                     Log.d(TAG, "Streaming feature $feature is ready")
                 }
+                sdkModeEnableDisposable = api.enableSDKMode(deviceId)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                        {
+                            Log.d(TAG, "SDK mode enabled")
+                            // at this point dispose all existing streams. SDK mode enable command
+                            // stops all the streams but client is not informed. This is workaround
+                            // for the bug.
+                            //movementDisposable?.dispose()
+                        },
+                        { error ->
+                            val errorString = "SDK mode enable failed: $error"
+                            showToast(errorString)
+                            Log.e(TAG, errorString)
+                        }
+                    )
             }
 
             // UUID logging
@@ -231,6 +276,7 @@ class TrainingActivity : AppCompatActivity() {
                 textViewBattery.text = batteryLevelText
                 if (level == 100) {
                     textViewBattery.setPadding(14,0,0,0)
+                    textViewBattery.setTextColor(Color.GREEN)
                 } else if (level > 60) {
                     textViewBattery.setTextColor(Color.GREEN)
                     imageViewBatteryLevel.setColorFilter(Color.GREEN)
@@ -240,9 +286,16 @@ class TrainingActivity : AppCompatActivity() {
                 } else if (level >= 10) {
                     textViewBattery.setTextColor(Color.RED)
                     imageViewBatteryLevel.setColorFilter(Color.RED)
+                    showToast("Sensor is low battery")
                 } else {
                     textViewBattery.setPadding(22,0,0,0)
                 }
+            }
+
+            // update hr data
+            override fun hrNotificationReceived(identifier: String, data: PolarHrData) {
+                Log.d(TAG, "HR -----------------------" + data.hr)
+                heartRate = data.hr
             }
 
             // works only with oh10 anyways
@@ -266,6 +319,7 @@ class TrainingActivity : AppCompatActivity() {
                     textViewBattery.visibility = TextView.INVISIBLE
                 } else {
                     api.connectToDevice(deviceId)
+
                 }
             } catch (polarInvalidArgument: PolarInvalidArgument) {
                 val attempt = if (deviceConnected) {
@@ -284,41 +338,78 @@ class TrainingActivity : AppCompatActivity() {
          */
         movementButton.setOnClickListener {
             val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
-            var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
+
+            val settingsMap : Map<PolarSensorSetting.SettingType, Int> = mapOf(
+                PolarSensorSetting.SettingType.SAMPLE_RATE to SAMPLE_RATE,
+                PolarSensorSetting.SettingType.RANGE to RANGE,
+                PolarSensorSetting.SettingType.RESOLUTION to 16,
+                PolarSensorSetting.SettingType.CHANNELS to 3)
+            val streamSettings = PolarSensorSetting(settingsMap)
+
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
-                textViewPunchResult.visibility = TextView.INVISIBLE
+                //textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
 
-                //sessionFile = File(filesDir.absolutePath, sessionFileName)
-                //sessionOut = FileOutputStream(sessionFile)
                 ++roundNumber
                 var roundStartLine = "round," + roundNumber + "\n"
                 sessionOut!!.write(roundStartLine.toByteArray())
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
+
+                roundTimes.text = getString(R.string.round_times, roundNumber.toString())
+
                 showCountdown(textViewCountdown1, textViewCountdown2)
 
                 Thread {
                     movementDisposable =
-                        requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
+                        /*requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
                             .flatMap { settings: PolarSensorSetting ->
                                 api.startAccStreaming(deviceId, settings)
-                            }
-                            .observeOn(AndroidSchedulers.mainThread())
+                            }*/
+                            api.startAccStreaming(deviceId, streamSettings).observeOn(AndroidSchedulers.mainThread())
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
+
                                     for (data in polarAccelerometerData.samples) {
+
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
-                                            Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            Log.e(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            Log.e(TAG, "Calculated punch velocity: $punchID")
+
+                                            textViewHr.text = getString(R.string.hr, heartRate.toString())
+
                                             player.start()
+
                                             textViewSpeed.visibility = TextView.VISIBLE
-                                            textViewSpeed.text = getString(R.string.speed, result.first.toString())
+
+                                            punchID= punchID + 1
+
+                                            val df = DecimalFormat("#.#")
+                                            textViewSpeed.text = getString(R.string.speed, df.format(result.first).toString())
                                             var punchString = "punch," + result.first.toString() + "," + result.second.toString() +"\n"
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
+
                                             punches.add(result)
+
+                                            // Graph
+                                            speedVals.add(result.first.toInt())
+                                            hrVals.add(heartRate)
+
+                                            plot.clear()
+                                            val seriesSpeed: XYSeries = SimpleXYSeries(speedVals, SimpleXYSeries.ArrayFormat.Y_VALS_ONLY, "speed - km/h")
+                                            val seriesHr: XYSeries = SimpleXYSeries(hrVals, SimpleXYSeries.ArrayFormat.Y_VALS_ONLY,"heart rate - BPM")
+                                            plot.addSeries(seriesSpeed, seriesSpeedFormat)
+                                            plot.addSeries(seriesHr, seriesHrFormat)
+
+                                            plot.setRangeStep(StepMode.INCREMENT_BY_VAL, 10.0)
+                                            plot.setDomainStep(StepMode.INCREMENT_BY_VAL, 1.0)
+//                                            plot.setRangeBoundaries(0,120,BoundaryMode.FIXED)
+//                                            plot.setDomainBoundaries(0,30,BoundaryMode.FIXED)
+
+                                            plot.redraw()
                                         }
                                     }
                                 },
@@ -337,10 +428,12 @@ class TrainingActivity : AppCompatActivity() {
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
                 if(dataReceived) {
+                    Log.e("PUNCHES",punches.toString())
                     var totalPunches = punches.size
                     var correctPunches = 0
                     var avgSpeed = 0.0
                     for(i in punches){
+                        println(i)
                         if(i.second)
                             ++correctPunches
                         avgSpeed += i.first
@@ -350,35 +443,12 @@ class TrainingActivity : AppCompatActivity() {
                     var incorrectPunches = totalPunches - correctPunches
                     var roundLength = 1.0
                     var roundEndLine = "round_info," + roundNumber + "," + roundLength + "," + totalPunches + "," + correctPunches + "," + incorrectPunches + "," + avgHeartRate + "," + avgSpeed + "\n"
+
                     sessionOut!!.write(roundEndLine.toByteArray())
+                    punchID = 1
+                    punches  = ArrayList()
+
                 }
-
-
-                // Punch analyzing
-/*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
-
-
-                readDataFile(fname, punchAnalyzer)
-
-                textViewPunchResult.visibility = TextView.VISIBLE
-                if (!punchAnalyzer.isPunch) {
-                    textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
-                    textViewPunchResult.setTextColor(Color.RED)
-                } else {
-                    if (!punchAnalyzer.isCorrectPunch) {
-                        textViewPunchResult.text = "My punch is: incorrect"
-                        textViewPunchResult.setTextColor(Color.RED)
-                    } else {
-                        textViewPunchResult.text = "My punch is: correct"
-                        textViewPunchResult.setTextColor(resources.getColor(R.color.green_font))
-
-                        textViewSpeed.visibility = TextView.VISIBLE
-                        textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
-                    }
-                }*/
-
-                // Delete current_session.csv (we will move it inside roundButton in the future if need)
-                // deleteFile(fname)
             }
         }
 
@@ -422,6 +492,7 @@ class TrainingActivity : AppCompatActivity() {
             var countOutStream = FileOutputStream(sessionInfoFile)
             countOutStream.write(outString.toByteArray())
         }
+
         else {
             var countInStream = openFileInput(sessionsInfoFileName)
             var inputStreamReader = InputStreamReader(countInStream)
@@ -438,13 +509,24 @@ class TrainingActivity : AppCompatActivity() {
             }
         }
 
-        sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
+         if( firebaseHandler.getCurrentUser()?.email == null ) {
+             sessionFileName=  "session_" + currentSessionID + ".txt"
+        } else {
+             sessionFileName= "database1.txt"
+
+        }
+
+        Log.e("FILENAME",sessionFileName.toString())
+
+       // sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
         sessionFile = File(filesDir.absolutePath, sessionFileName)
         sessionOut = FileOutputStream(sessionFile)
 
         Log.d(TAG, "Creating SessionFile")
-        var sessionLine = "session," + currentSessionID + "," + Date() + "\n"
+        var sessionLine = "training," + currentSessionID + "," + Date() + "\n"
         sessionOut!!.write(sessionLine.toByteArray())
+
+
         super.onStart()
     }
 
@@ -499,17 +581,6 @@ class TrainingActivity : AppCompatActivity() {
 
                 Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
 
-                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1) {         // get current sample rate and range
-                    range = available.settings[PolarSensorSetting.SettingType.RANGE]?.first() ?: -1
-                    punchAnalyzer.setRange(range)                                                   // set in PunchAnalyzer
-                }
-                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1) {
-                    sampleRate =
-                        available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first()                            ?: -1
-                    punchAnalyzer.setSampleRate(sampleRate)
-                }
-                Log.d(TAG, "Range =" + range + " Sample rate =" + sampleRate)
-
                 return@zip android.util.Pair(available, all)
             }
         }
@@ -537,8 +608,11 @@ class TrainingActivity : AppCompatActivity() {
     public override fun onStop() {
         if(dataReceived) {
             var currentSession = sessionCount - 1
-            var sessionLine = "session_info," + currentSession +"\n"
-            sessionOut!!.write(sessionLine.toByteArray())
+//            var sessionLine = "session_info," + currentSession +"\n"
+//            sessionOut!!.write(sessionLine.toByteArray())
+            var dataReader= DataReader()
+
+            dataReader.DataHandler()
         }
         else{
             var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
@@ -595,11 +669,17 @@ class TrainingActivity : AppCompatActivity() {
 
     private fun showCountdown(view1: TextView, view2: TextView){
         Thread {
-            val timeResponseSecs = timeResponse/1000
+            var timeResponseSecs = 0
+
+            if (roundNumber == 1) {
+                timeResponseSecs = 3000/1000
+            } else {
+                timeResponseSecs = 8000/1000
+            }
 
             for (i in 0..timeResponseSecs) {
                 runOnUiThread {
-                    if (i != 7) {
+                    if (i != timeResponseSecs) {
                         view1.visibility = TextView.VISIBLE
                         view2.visibility = TextView.VISIBLE
 

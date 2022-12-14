@@ -14,8 +14,10 @@
     <string name="scanning_devices">stop scanning</string>
     <string name="end_training">end training</string>
     <string name="punch_result">My punch is: ?</string>
-    <string name="speed">My speed is: %s</string>
+    <string name="speed">My speed is: %s km/h</string>
+    <string name="hr">My heart rate is: %s BPM</string>
     <string name="show_the_number_of_sensor">Found %s sensors</string>
+    <string name="round_times">(Round %s)</string>
 
     <string-array name="device_id_array">
         <item>id1</item>
@@ -38,4 +40,9 @@
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
+
+    <!--  graph  -->
+    <string name="title">My round</string>
+    <string name="range_title">Speed and heart rate</string>
+    <string name="domain_title">Times</string>
 </resources>
