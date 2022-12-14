@@ -193,13 +193,10 @@ public class PunchAnalyzer {
 
             ignoreFrames = true;
             ignoreCount = punchBlockedFrames;
-            try {
-                Log.d(TAG, "Analyze: starting speed calculation...");
-                punchSpeed = calculatePunchVelocity();
-            }
-            catch (IllegalArgumentException e){
-                Log.d(TAG, e.toString());
-            }
+
+            Log.d(TAG, "Analyze: starting speed calculation...");
+            punchSpeed = calculatePunchVelocity();
+
         }
 
         /*
@@ -236,7 +233,7 @@ public class PunchAnalyzer {
     /*
      * Calculates and returns Punch velocity
      */
-    private Double calculatePunchVelocity() throws IllegalArgumentException {
+    private Double calculatePunchVelocity(){
 
         int startIndex = findStartIndex();
         int endIndex = findEndIndex();
@@ -244,48 +241,37 @@ public class PunchAnalyzer {
 
         Log.d(TAG, "Start Index: " + startIndex + " " + xValueBuffer.get(startIndex));
         Log.d(TAG, "End Index: " + endIndex + " " + xValueBuffer.get(endIndex));
-        //Log.d(TAG, "RMS Start Index: " + startIndex + " " + RootMeanSquareBuffer.get(startIndex));
-        //Log.d(TAG, "RMS End Index: " + endIndex + " " + RootMeanSquareBuffer.get(endIndex));
-
 
         for(int i = 0; i < xValueBuffer.size(); ++i)
             Log.d(TAG, "xBuf: " + xValueBuffer.get(i));
-        for(int i = 0; i < RootMeanSquareBuffer.size(); ++i)
-            Log.d(TAG, "RMSBuf: " + RootMeanSquareBuffer.get(i));
+
+        //for(int i = 0; i < RootMeanSquareBuffer.size(); ++i)
+        //    Log.d(TAG, "RMSBuf: " + RootMeanSquareBuffer.get(i));
 
 
         if(startIndex == -1 || endIndex == -1 || startIndex >= endIndex) {
             Log.d(TAG, "Speed calculation: Index not found!");
-            return null;
+            return 1.0;
         }
 
         // ------ speed calculation     ------
-        double speedInMps = 0;
+
         double speedRMS = 0;
 
         for (int i = startIndex; i <= endIndex; ++i) {
-            speedInMps += (frameLengthInMs * Math.abs(xValueBuffer.get(i)));
-            speedRMS += (frameLengthInMs * Math.abs(RootMeanSquareBuffer.get(i)));
+            speedRMS += (frameLengthInMs * RootMeanSquareBuffer.get(i));
             if (i < endIndex - 2) {
-                speedInMps += ((frameLengthInMs * Math.abs(xValueBuffer.get(i)
-                        - xValueBuffer.get(i + 1))) / 2.0);
-                speedRMS += ((frameLengthInMs * Math.abs(RootMeanSquareBuffer.get(i)
-                        - RootMeanSquareBuffer.get(i + 1))) / 2.0);
+                speedRMS += ((frameLengthInMs * RootMeanSquareBuffer.get(i)
+                        - RootMeanSquareBuffer.get(i + 1)) / 2.0);
             }
             else {
-                speedInMps += (((frameLengthInMs / 2.0) * Math.abs(xValueBuffer.get(i))) / 2.0);
-                speedRMS += (((frameLengthInMs / 2.0) * Math.abs(RootMeanSquareBuffer.get(i))) / 2.0);
+                speedRMS += (((frameLengthInMs / 2.0) * RootMeanSquareBuffer.get(i)) / 2.0);
             }
-            //speedInMps -= frameLengthInMs * 10.0;
-            //speedRMS -= frameLengthInMs * 5.74;
         }
 
-        speedInMps /= 1000; //framelength is in ms
         speedRMS /= 1000;
         // ------ end speed calculation ------
 
-        Log.d(TAG, "Apprx. speed in meters per second: " + speedInMps);
-        Log.d(TAG, "Apprx. speed in kilometer per hour: " + (speedInMps * MPS_TO_KMH));
         Log.d(TAG, "Apprx. speed(RMS) in meters per second: " + speedRMS);
         Log.d(TAG, "Apprx. speed(RMS) in kilometer per hour: " + (speedRMS * MPS_TO_KMH));
 
@@ -296,20 +282,30 @@ public class PunchAnalyzer {
     /*
      * Finds and returns the Element indicating that the punching movement begins
      */
-    private int findStartIndex() throws IllegalArgumentException{
+    private int findStartIndex(){
 
         Log.d(TAG, "startIndex: starting...");
-        if(xValueBuffer.size() != bufferSize) {
-            IllegalArgumentException e = new IllegalArgumentException("findStartIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
-            throw e;
+        if(xValueBuffer.size() != bufferSize ||(bufferSize != BUFFER_SIZE_26_HZ && bufferSize != BUFFER_SIZE_52_HZ )) {
+            Log.d(TAG, "findStartIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
+            return -1;
         }
-        int startIndex = 0;
 
-        int frameBufferIndex = xValueBuffer.size() - 8;
+        int frameBufferIndex = 0;
+
+        /*
+        * see documentation for detailed explanation of frame skipping
+        */
+        if(bufferSize == BUFFER_SIZE_52_HZ) {           // skip 7 frames at 52 Hz
+            frameBufferIndex = xValueBuffer.size() - 8;
+        }
+        if(bufferSize == BUFFER_SIZE_26_HZ) {           // skip 3 frames at 26 Hz
+            frameBufferIndex = xValueBuffer.size() - 4;
+        }
+
+        int startIndex = 0;
         boolean continueStartSearch = true;
 
         Log.d(TAG, "startIndex: first loop at " + frameBufferIndex + " size " + xValueBuffer.size() + " starting...");
-
         while (continueStartSearch) {                       // search for element > -15.0 starts here,
 
             if (!invertSign && xValueBuffer.get(frameBufferIndex) > START_THRESHOLD) {
@@ -332,12 +328,11 @@ public class PunchAnalyzer {
     }
 
     /*
-     * Finds and returns the Element indicating that the punch connects
+     * Finds and returns the Element indicating that the arm is no longer accelerating in punching direction
      */
-    private int findEndIndex() throws IllegalArgumentException{
+    private int findEndIndex(){
         if(xValueBuffer.size() != bufferSize) {
-            IllegalArgumentException e = new IllegalArgumentException("findEndIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
-            throw e;
+           Log.d(TAG, "findEndIndex invalid Buffer Size: " + xValueBuffer.size() + " expected: " + bufferSize);
         }
         int frameBufferIndex;
         int endIndex = 0;
