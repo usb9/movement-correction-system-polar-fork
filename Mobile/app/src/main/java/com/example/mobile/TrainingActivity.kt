@@ -55,11 +55,13 @@ class TrainingActivity : AppCompatActivity() {
     }
 
     private var movementDisposable: Disposable? = null
-
+    private var sdkModeEnableDisposable: Disposable? = null
     private var deviceConnected = false
     private var bluetoothEnabled = false
 
-    private val MINIMUM_SPEED = 10.0
+    private val SAMPLE_RATE = 52
+    private val RANGE = 16
+    private val MINIMUM_SPEED = 12.0
     // Buttons
     private lateinit var connectButton: Button
     private lateinit var movementButton: Button
@@ -70,6 +72,7 @@ class TrainingActivity : AppCompatActivity() {
     //private lateinit var textViewPunchResult: TextView
     private lateinit var textViewSpeed: TextView
     private lateinit var backNavigation: TextView
+
     private lateinit var textViewHr: TextView
     private lateinit var roundTimes: TextView
 
@@ -83,12 +86,14 @@ class TrainingActivity : AppCompatActivity() {
     private var sessionFileName: String? = null
     private var sessionFile: File? = null
     private var sessionOut: FileOutputStream? = null
-    private var sampleRate = 26 // Handling raw data in file - in Hz
-    private var range = 8;
-    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
+
+    //private var sampleRate = 26 // Handling raw data in file - in Hz
+    //private var range = 8;
+    private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(SAMPLE_RATE, RANGE)
     private var punchID = 1
     private var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
     private val firebaseHandler = FirebaseHandler()
+
     // Latency
     //private val timeResponse = 7000
     private lateinit var textViewCountdown1: TextView
@@ -143,9 +148,6 @@ class TrainingActivity : AppCompatActivity() {
         } catch (ex: Exception) {
             Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
         }
-
-
-
 
 //        /*
 //         * decide whether endTrainingButton is visible or invisible
@@ -213,8 +215,11 @@ class TrainingActivity : AppCompatActivity() {
                 Log.d(TAG, "CONNECTED: " + polarDeviceInfo.deviceId)
                 deviceId = polarDeviceInfo.deviceId
                 deviceConnected = true
+
+
                 val buttonText = getString(R.string.disconnect_from_device, deviceId)
                 toggleButtonDown(connectButton, buttonText)
+
             }
 
             // only logging
@@ -237,6 +242,22 @@ class TrainingActivity : AppCompatActivity() {
                 for (feature in features) {
                     Log.d(TAG, "Streaming feature $feature is ready")
                 }
+                sdkModeEnableDisposable = api.enableSDKMode(deviceId)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                        {
+                            Log.d(TAG, "SDK mode enabled")
+                            // at this point dispose all existing streams. SDK mode enable command
+                            // stops all the streams but client is not informed. This is workaround
+                            // for the bug.
+                            //movementDisposable?.dispose()
+                        },
+                        { error ->
+                            val errorString = "SDK mode enable failed: $error"
+                            showToast(errorString)
+                            Log.e(TAG, errorString)
+                        }
+                    )
             }
 
             // UUID logging
@@ -273,7 +294,7 @@ class TrainingActivity : AppCompatActivity() {
 
             // update hr data
             override fun hrNotificationReceived(identifier: String, data: PolarHrData) {
-                //Log.d(TAG, "HR -----------------------" + data.hr)
+                Log.d(TAG, "HR -----------------------" + data.hr)
                 heartRate = data.hr
             }
 
@@ -298,6 +319,7 @@ class TrainingActivity : AppCompatActivity() {
                     textViewBattery.visibility = TextView.INVISIBLE
                 } else {
                     api.connectToDevice(deviceId)
+
                 }
             } catch (polarInvalidArgument: PolarInvalidArgument) {
                 val attempt = if (deviceConnected) {
@@ -316,13 +338,19 @@ class TrainingActivity : AppCompatActivity() {
          */
         movementButton.setOnClickListener {
             val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
+
+            val settingsMap : Map<PolarSensorSetting.SettingType, Int> = mapOf(
+                PolarSensorSetting.SettingType.SAMPLE_RATE to SAMPLE_RATE,
+                PolarSensorSetting.SettingType.RANGE to RANGE,
+                PolarSensorSetting.SettingType.RESOLUTION to 16,
+                PolarSensorSetting.SettingType.CHANNELS to 3)
+            val streamSettings = PolarSensorSetting(settingsMap)
+
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 //textViewPunchResult.visibility = TextView.INVISIBLE
                 textViewSpeed.visibility = TextView.INVISIBLE
 
-                //sessionFile = File(filesDir.absolutePath, sessionFileName)
-                //sessionOut = FileOutputStream(sessionFile)
                 ++roundNumber
                 var roundStartLine = "round," + roundNumber + "\n"
                 sessionOut!!.write(roundStartLine.toByteArray())
@@ -334,11 +362,11 @@ class TrainingActivity : AppCompatActivity() {
 
                 Thread {
                     movementDisposable =
-                        requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
+                        /*requestStreamSettings(deviceId, PolarBleApi.DeviceStreamingFeature.ACC)
                             .flatMap { settings: PolarSensorSetting ->
                                 api.startAccStreaming(deviceId, settings)
-                            }
-                            .observeOn(AndroidSchedulers.mainThread())
+                            }*/
+                            api.startAccStreaming(deviceId, streamSettings).observeOn(AndroidSchedulers.mainThread())
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
 
@@ -347,8 +375,8 @@ class TrainingActivity : AppCompatActivity() {
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
-                                            Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
-                                            Log.d(TAG, "Calculated punch velocity: $punchID")
+                                            Log.e(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            Log.e(TAG, "Calculated punch velocity: $punchID")
 
                                             textViewHr.text = getString(R.string.hr, heartRate.toString())
 
@@ -363,6 +391,7 @@ class TrainingActivity : AppCompatActivity() {
                                             var punchString = "punch," + result.first.toString() + "," + result.second.toString() +"\n"
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
+
                                             punches.add(result)
 
                                             // Graph
@@ -420,33 +449,6 @@ class TrainingActivity : AppCompatActivity() {
                     punches  = ArrayList()
 
                 }
-
-
-                // Punch analyzing
-/*                val punchAnalyzer = PunchAnalyzer(sampleRate,range)
-
-
-                readDataFile(fname, punchAnalyzer)
-
-                textViewPunchResult.visibility = TextView.VISIBLE
-                if (!punchAnalyzer.isPunch) {
-                    textViewPunchResult.text = "Opps, this is not a punch. Pls try again"
-                    textViewPunchResult.setTextColor(Color.RED)
-                } else {
-                    if (!punchAnalyzer.isCorrectPunch) {
-                        textViewPunchResult.text = "My punch is: incorrect"
-                        textViewPunchResult.setTextColor(Color.RED)
-                    } else {
-                        textViewPunchResult.text = "My punch is: correct"
-                        textViewPunchResult.setTextColor(resources.getColor(R.color.green_font))
-
-                        textViewSpeed.visibility = TextView.VISIBLE
-                        textViewSpeed.text = getString(R.string.speed, punchAnalyzer.mySpeed.toString())
-                    }
-                }*/
-
-                // Delete current_session.csv (we will move it inside roundButton in the future if need)
-                // deleteFile(fname)
             }
         }
 
@@ -578,17 +580,6 @@ class TrainingActivity : AppCompatActivity() {
                 Log.d(TAG, "Feature " + feature + " available settings " + available.settings)
 
                 Log.d(TAG, "Feature " + feature + " all settings " + all.settings)
-
-                if(available.settings[PolarSensorSetting.SettingType.RANGE]?.count()  == 1) {         // get current sample rate and range
-                    range = available.settings[PolarSensorSetting.SettingType.RANGE]?.first() ?: -1
-                    punchAnalyzer.setRange(range)                                                   // set in PunchAnalyzer
-                }
-                if(available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.count()  == 1) {
-                    sampleRate =
-                        available.settings[PolarSensorSetting.SettingType.SAMPLE_RATE]?.first()                            ?: -1
-                    punchAnalyzer.setSampleRate(sampleRate)
-                }
-                Log.d(TAG, "Range =" + range + " Sample rate =" + sampleRate)
 
                 return@zip android.util.Pair(available, all)
             }
