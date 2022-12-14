@@ -82,6 +82,8 @@ class TrainingActivity : AppCompatActivity() {
     private var sampleRate = 26 // Handling raw data in file - in Hz
     private var range = 8;
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
+    private var punchID = 1
+    var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
 
     // Latency
     private val timeResponse = 7000
@@ -284,7 +286,6 @@ class TrainingActivity : AppCompatActivity() {
          */
         movementButton.setOnClickListener {
             val player = MediaPlayer.create(this, Settings.System.DEFAULT_NOTIFICATION_URI)
-            var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
             val isDisposed = movementDisposable?.isDisposed ?: true
             if (isDisposed) {
                 textViewPunchResult.visibility = TextView.INVISIBLE
@@ -307,18 +308,24 @@ class TrainingActivity : AppCompatActivity() {
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(
                                 { polarAccelerometerData: PolarAccelerometerData ->
+
                                     for (data in polarAccelerometerData.samples) {
+
                                         //Log.d(TAG, "ACC    x: ${data.x} y:  ${data.y} z: ${data.z}")
                                         var result: Pair<Double, Boolean> = punchAnalyzer.nextFrame(data.y, data.x, data.z)
                                         if(result.first > MINIMUM_SPEED) {
                                             Log.d(TAG,"Calculated punch velocity: " + result.first + "km/h")
+                                            Log.d(TAG, "Calculated punch velocity: $punchID")
+
                                             player.start()
                                             textViewSpeed.visibility = TextView.VISIBLE
                                             textViewSpeed.text = getString(R.string.speed, result.first.toString())
-                                            var punchString = "punch," + result.first.toString() + "," + result.second.toString() +"\n"
+                                            var punchString = "punch,"+ punchID +","  + result.second.toString() + "," + result.first.toString() +"\n"
+
                                             sessionOut!!.write(punchString.toByteArray())
                                             dataReceived = true
                                             punches.add(result)
+                                            punchID= punchID + 1
                                         }
                                     }
                                 },
@@ -337,10 +344,12 @@ class TrainingActivity : AppCompatActivity() {
                 // NOTE dispose will stop streaming if it is "running"
                 movementDisposable?.dispose()
                 if(dataReceived) {
+                    Log.e("PUNCHES",punches.toString())
                     var totalPunches = punches.size
                     var correctPunches = 0
                     var avgSpeed = 0.0
                     for(i in punches){
+                        println(i)
                         if(i.second)
                             ++correctPunches
                         avgSpeed += i.first
@@ -350,7 +359,11 @@ class TrainingActivity : AppCompatActivity() {
                     var incorrectPunches = totalPunches - correctPunches
                     var roundLength = 1.0
                     var roundEndLine = "round_info," + roundNumber + "," + roundLength + "," + totalPunches + "," + correctPunches + "," + incorrectPunches + "," + avgHeartRate + "," + avgSpeed + "\n"
+
                     sessionOut!!.write(roundEndLine.toByteArray())
+                    punchID = 1
+                    punches  = ArrayList()
+
                 }
 
 
@@ -443,7 +456,7 @@ class TrainingActivity : AppCompatActivity() {
         sessionOut = FileOutputStream(sessionFile)
 
         Log.d(TAG, "Creating SessionFile")
-        var sessionLine = "session," + currentSessionID + "," + Date() + "\n"
+        var sessionLine = "training," + currentSessionID + "," + Date() + "\n"
         sessionOut!!.write(sessionLine.toByteArray())
         super.onStart()
     }
@@ -537,8 +550,8 @@ class TrainingActivity : AppCompatActivity() {
     public override fun onStop() {
         if(dataReceived) {
             var currentSession = sessionCount - 1
-            var sessionLine = "session_info," + currentSession +"\n"
-            sessionOut!!.write(sessionLine.toByteArray())
+//            var sessionLine = "session_info," + currentSession +"\n"
+//            sessionOut!!.write(sessionLine.toByteArray())
         }
         else{
             var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)
