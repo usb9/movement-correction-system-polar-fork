@@ -11,14 +11,11 @@ import java.util.*
 class DataReader   {
     private val file_path: String = "/data/data/polar.project/files/database.txt"
 
-
+    val firebaseHandler = FirebaseHandler()
     //check fireAuthentication
-    val mFirebaseAuth = FirebaseAuth.getInstance();
-
-    val mFirebaseUser = mFirebaseAuth.currentUser;
-
-
-
+//    val mFirebaseAuth = FirebaseAuth.getInstance();
+//
+//    val mFirebaseUser = mFirebaseAuth.currentUser;
     //data title
 
 
@@ -31,7 +28,8 @@ class DataReader   {
     //Read and handle data structure same as data design
     fun DataHandler()
     {
-        Log.e("TAG",mFirebaseUser?.email.toString())
+        val currentUser = firebaseHandler.getCurrentUser()
+        Log.e("USER",currentUser?.email.toString())
         var stringArray: MutableList<String> = mutableListOf()
 
        // var round:RoundInforTest
@@ -90,12 +88,12 @@ class DataReader   {
 
         }
 
-        var training = Training(training_id,mFirebaseUser?.uid.toString(),mFirebaseUser?.email.toString(), date,roundSessions)
+        var training = Training(training_id,currentUser?.uid.toString(),currentUser?.email.toString(), date,roundSessions)
         //var trainingTest= TrainingTest(training)
 
         Log.e("TAG",  training.toString())
 
-        if(mFirebaseUser?.email !== null)
+        if(currentUser?.email !== null)
         {
             db.collection("training_test").add(training)
                 .addOnSuccessListener { documentReference ->
