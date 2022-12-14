@@ -88,7 +88,7 @@ class SettingActivity : AppCompatActivity() {
                     showToast("Phone Bluetooth on")
                 } else {
                     disableAllButtons()
-                    showToast("Phone Bluetooth off. Please, turn on bluetooth and sensor", "warning")
+                    showToast("Phone Bluetooth off. Please, turn on bluetooth and sensor")
                 }
             }
 
@@ -320,16 +320,20 @@ class SettingActivity : AppCompatActivity() {
     private fun showToast(message: String, status: String = "info") {
         val toast = Toast.makeText(applicationContext, message, Toast.LENGTH_LONG)
 
-        toast.setGravity(Gravity.CENTER, 0, 0)
-
-        val view = toast.view
-        // view!!.setBackgroundResource(android.R.drawable.alert_light_frame)
-        val text = view!!.findViewById<View>(android.R.id.message) as TextView
-
-        if (status != "info") {  // info or warning as Log function
-            text.setTextColor(Color.RED)
-        }
-        text.textSize = 20F
+//         toast.setGravity(Gravity.CENTER, 0, 0)
+//
+//        val view = toast.view
+//        // view!!.setBackgroundResource(android.R.drawable.alert_light_frame)
+//        val text = view!!.findViewById<View>(android.R.id.message) as TextView
+////        if (text != null)
+////        {
+////            toast.setGravity(Gravity.CENTER, 0, 0)
+////
+////        }
+//        if (status != "info") {  // info or warning as Log function
+//            text.setTextColor(Color.RED)
+//        }
+//        text.textSize = 20F
         toast.show()
     }
 
