@@ -86,7 +86,7 @@ class TrainingActivity : AppCompatActivity() {
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
 
     // Latency
-    private val timeResponse = 7000
+    //private val timeResponse = 7000
     private lateinit var textViewCountdown1: TextView
     private lateinit var textViewCountdown2: TextView
 
@@ -236,6 +236,7 @@ class TrainingActivity : AppCompatActivity() {
                 textViewBattery.text = batteryLevelText
                 if (level == 100) {
                     textViewBattery.setPadding(14,0,0,0)
+                    textViewBattery.setTextColor(Color.GREEN)
                 } else if (level > 60) {
                     textViewBattery.setTextColor(Color.GREEN)
                     imageViewBatteryLevel.setColorFilter(Color.GREEN)
@@ -245,6 +246,7 @@ class TrainingActivity : AppCompatActivity() {
                 } else if (level >= 10) {
                     textViewBattery.setTextColor(Color.RED)
                     imageViewBatteryLevel.setColorFilter(Color.RED)
+                    showToast("Sensor is low battery")
                 } else {
                     textViewBattery.setPadding(22,0,0,0)
                 }
@@ -307,6 +309,7 @@ class TrainingActivity : AppCompatActivity() {
                 var roundStartLine = "round," + roundNumber + "\n"
                 sessionOut!!.write(roundStartLine.toByteArray())
                 toggleButtonDown(movementButton, R.string.stop_movement_stream)
+
                 showCountdown(textViewCountdown1, textViewCountdown2)
 
                 Thread {
@@ -610,11 +613,17 @@ class TrainingActivity : AppCompatActivity() {
 
     private fun showCountdown(view1: TextView, view2: TextView){
         Thread {
-            val timeResponseSecs = timeResponse/1000
+            var timeResponseSecs = 0
+
+            if (roundNumber == 1) {
+                timeResponseSecs = 3000/1000
+            } else {
+                timeResponseSecs = 8000/1000
+            }
 
             for (i in 0..timeResponseSecs) {
                 runOnUiThread {
-                    if (i != 7) {
+                    if (i != timeResponseSecs) {
                         view1.visibility = TextView.VISIBLE
                         view2.visibility = TextView.VISIBLE
 
