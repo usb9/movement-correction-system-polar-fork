@@ -21,29 +21,29 @@ class MainActivity : AppCompatActivity() {
         var noNeedAccount: Boolean = false
 
         // check no need account status
-        try {
-            var fin: FileInputStream? = null
-            fin = openFileInput(fileName)
-            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
-            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
-
-            val stringBuilder: StringBuilder = StringBuilder()
-            var text: String? = null
-            while (run {
-                    text = bufferedReader.readLine()
-                    text
-                } != null) {
-                stringBuilder.append(text)
-                text?.let {
-                    noNeedAccount = it.contains("no")
-                }
-            }
-        } catch (ex: Exception) {
-            if (ex.message?.contains("No such file or directory") == true) {
-                noNeedAccount = false
-            }
-        }
-
+//        try {
+//            var fin: FileInputStream? = null
+//            fin = openFileInput(fileName)
+//            var inputStreamReader: InputStreamReader = InputStreamReader(fin)
+//            val bufferedReader: BufferedReader = BufferedReader(inputStreamReader)
+//
+//            val stringBuilder: StringBuilder = StringBuilder()
+//            var text: String? = null
+//            while (run {
+//                    text = bufferedReader.readLine()
+//                    text
+//                } != null) {
+//                stringBuilder.append(text)
+//                text?.let {
+//                    noNeedAccount = it.contains("no")
+//                }
+//            }
+//        } catch (ex: Exception) {
+//            if (ex.message?.contains("No such file or directory") == true) {
+//                noNeedAccount = false
+//            }
+//        }
+//
 
 
 //        var string = "training,1,Tue Dec 13 02:29:32 GMT+01:00 2022\n" +
@@ -67,9 +67,9 @@ class MainActivity : AppCompatActivity() {
 //            //Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
 //            Log.e("hihihaha", "Error: ${ex.message}")
 //        }
-        val dataHandler = DataReader()
-
-        dataHandler.DataHandler()
+//        val dataHandler = DataReader()
+//
+//        dataHandler.DataHandler()
 
 
 

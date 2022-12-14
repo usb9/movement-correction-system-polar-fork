@@ -83,17 +83,17 @@ class TrainingActivity : AppCompatActivity() {
     private var range = 8;
     private var punchAnalyzer: PunchAnalyzer = PunchAnalyzer(sampleRate, range)
     private var punchID = 1
-    var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
-
+    private var punches : ArrayList<Pair<Double,Boolean>> = ArrayList()
+    private val firebaseHandler = FirebaseHandler()
     // Latency
     private val timeResponse = 7000
     private lateinit var textViewCountdown1: TextView
     private lateinit var textViewCountdown2: TextView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_training)
         Log.d(TAG, "version: " + PolarBleApiDefaultImpl.versionInfo())
+
 
         connectButton = findViewById(R.id.connect_button)
         movementButton = findViewById(R.id.movement_button)
@@ -106,6 +106,9 @@ class TrainingActivity : AppCompatActivity() {
         backNavigation = findViewById(R.id.training_nav_bar)
         textViewCountdown1 = findViewById(R.id.view_countdown_1)
         textViewCountdown2 = findViewById(R.id.view_countdown_2)
+
+
+
 
         // file, outputstream for acc data storage
         Log.d(TAG, "path: " + filesDir.absolutePath)
@@ -435,6 +438,7 @@ class TrainingActivity : AppCompatActivity() {
             var countOutStream = FileOutputStream(sessionInfoFile)
             countOutStream.write(outString.toByteArray())
         }
+
         else {
             var countInStream = openFileInput(sessionsInfoFileName)
             var inputStreamReader = InputStreamReader(countInStream)
@@ -451,13 +455,24 @@ class TrainingActivity : AppCompatActivity() {
             }
         }
 
-        sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
+         if( firebaseHandler.getCurrentUser()?.email == null ) {
+             sessionFileName=  "session_" + currentSessionID + ".txt"
+        } else {
+             sessionFileName= "database1.txt"
+
+        }
+
+        Log.e("FILENAME",sessionFileName.toString())
+
+       // sessionFileName = "session_" + currentSessionID + ".txt"    // create file for current session
         sessionFile = File(filesDir.absolutePath, sessionFileName)
         sessionOut = FileOutputStream(sessionFile)
 
         Log.d(TAG, "Creating SessionFile")
         var sessionLine = "training," + currentSessionID + "," + Date() + "\n"
         sessionOut!!.write(sessionLine.toByteArray())
+
+
         super.onStart()
     }
 
@@ -552,6 +567,9 @@ class TrainingActivity : AppCompatActivity() {
             var currentSession = sessionCount - 1
 //            var sessionLine = "session_info," + currentSession +"\n"
 //            sessionOut!!.write(sessionLine.toByteArray())
+            var dataReader= DataReader()
+
+            dataReader.DataHandler()
         }
         else{
             var sessionInfoFile: File = File(filesDir.absolutePath, sessionsInfoFileName)

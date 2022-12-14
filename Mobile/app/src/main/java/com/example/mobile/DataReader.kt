@@ -9,13 +9,14 @@ import java.io.File
 import java.util.*
 
 class DataReader   {
-    private val file_path: String = "/data/data/polar.project/files/database.txt"
+
+    private val file_path: String = "/data/data/polar.project/files/database1.txt"
 
     val firebaseHandler = FirebaseHandler()
     //check fireAuthentication
-//    val mFirebaseAuth = FirebaseAuth.getInstance();
-//
-//    val mFirebaseUser = mFirebaseAuth.currentUser;
+    //    val mFirebaseAuth = FirebaseAuth.getInstance();
+    //
+    //    val mFirebaseUser = mFirebaseAuth.currentUser;
     //data title
 
 
@@ -28,12 +29,13 @@ class DataReader   {
     //Read and handle data structure same as data design
     fun DataHandler()
     {
+
         val currentUser = firebaseHandler.getCurrentUser()
         Log.e("USER",currentUser?.email.toString())
         var stringArray: MutableList<String> = mutableListOf()
 
        // var round:RoundInforTest
-        var punch = Punch("0",false,0.0)
+        var punch = Punch(0,false,0.0)
         var punches: MutableList<Punch> =mutableListOf()
         var roundSessions: MutableList<RoundInfor> =mutableListOf()
 
@@ -64,7 +66,7 @@ class DataReader   {
                    // Log.e("TAG",  round.toString())
                 }
                 PUNCH -> {
-                     punch = Punch( stringHandler[1].trimStart(), stringHandler[2].trimStart().toBoolean(), stringHandler[3].trimStart().toDouble())
+                     punch = Punch( stringHandler[1].trimStart().toInt(), stringHandler[2].trimStart().toBoolean(), stringHandler[3].trimStart().toDouble())
 
                     punches.add(punch)
                 }
