@@ -4,9 +4,14 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.animation.AnimationUtils
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.android.synthetic.main.activity_home.*
+import org.w3c.dom.Text
 import java.io.BufferedReader
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -24,9 +29,10 @@ class HomeActivity : AppCompatActivity() {
         val helpButton = findViewById<Button>(R.id.help_button)
         val settingButton = findViewById<Button>(R.id.setting_button)
         val staticsButton = findViewById<Button>(R.id.statics_button)
+        val backArrow = findViewById<TextView>(R.id.backArrow_tv)
 
 
-        var mFirebaseUser = mFirebaseAuth.currentUser?.displayName;
+        var mFirebaseUser = mFirebaseAuth.currentUser?.email?.replace("@gmail.com","");
 
         Log.e("TAG",mFirebaseUser.toString())
         trainingButton.setOnClickListener {
@@ -61,5 +67,37 @@ class HomeActivity : AppCompatActivity() {
             val nextPage = Intent(this, SettingActivity::class.java)
             startActivity(nextPage)
         }
+
+        backArrow.setOnClickListener {
+            val nextPage = Intent(this, SignInActivity::class.java)
+            startActivity(nextPage)
+        }
+
+        // declare the animation
+        val middleTotop = AnimationUtils.loadAnimation(this, R.anim.middletotop)
+        val middleTobottom = AnimationUtils.loadAnimation(this, R.anim.middletobottom)
+        
+
+        val waveTop = findViewById<ImageView>(R.id.imageView_wave_top)
+        val waveBottom = findViewById<ImageView>(R.id.imageView_wave_bottom)
+
+        //set the animation
+        waveTop.startAnimation(middleTotop)
+        waveBottom.startAnimation(middleTobottom)
+
+        //DISPLAY USERNAME
+//        val displayEmail = intent.getStringExtra("DISPLAY_EMAIL")
+//        Log.e("Displayusername",displayEmail.toString())
+        if(mFirebaseUser != null){
+            val getString = "Welcome, $mFirebaseUser"
+            userDisplay_tv.text = getString
+        }else {
+            val getString = "Welcome"
+            userDisplay_tv.text = getString
+        }
+
+
+
+
     }
 }
